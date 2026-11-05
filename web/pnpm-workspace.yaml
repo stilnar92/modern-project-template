@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+  - e2e
+
+# Telemetry script of a Prism dependency. Do not run it.
+ignoredBuiltDependencies:
+  - "@scarf/scarf"
+
+# Security fixes for dependencies of dev tools (Prism, openapi-typescript).
+# Their latest releases still pin the vulnerable versions. Remove an entry
+# when the tool releases a version with the fix.
+overrides:
+  "lodash@<4.18.0": "^4.18.1"
+  "uuid@<11.1.1": "^11.1.1"
+  "minimatch@<11.0.1": "^11.0.1"

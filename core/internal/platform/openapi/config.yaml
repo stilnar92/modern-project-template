@@ -1,0 +1,7 @@
+# oapi-codegen settings. "task gen" runs it through go generate.
+package: openapi
+output: openapi.gen.go
+generate:
+  models: true
+  std-http-server: true
+  strict-server: true

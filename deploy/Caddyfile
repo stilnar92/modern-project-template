@@ -1,0 +1,43 @@
+# Local addresses. *.localhost goes to 127.0.0.1 without changes to the hosts file.
+# HTTP only: local certificates are not necessary.
+{
+	auto_https off
+	# No admin API: compose restarts Caddy to load a changed Caddyfile.
+	admin off
+}
+
+# Settings for each site: compression, security headers, JSON access log.
+(common) {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+http://api.localhost {
+	import common
+	reverse_proxy api:8080
+}
+
+http://mail.localhost {
+	import common
+	reverse_proxy mailpit:8025
+}
+
+http://s3.localhost {
+	import common
+	reverse_proxy s3:8333
+}
+
+# Any other host: the Docker healthcheck of Caddy, else 404.
+:80 {
+	respond /caddy-health 200
+	respond 404
+}

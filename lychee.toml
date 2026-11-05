@@ -1,0 +1,8 @@
+# Link check for the Markdown docs: task lint:docs.
+# Offline: only links to local files and their headings. No network calls,
+# so the check is fast and does not fail when an external site is down.
+offline = true
+include_fragments = "anchor-only"
+no_progress = true
+# The task passes only tracked files. These paths are a safety net.
+exclude_path = ["(^|/)node_modules/", "(^|/)dist/"]

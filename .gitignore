@@ -1,0 +1,20 @@
+.DS_Store
+.playwright-mcp/
+node_modules/
+.env
+.task/
+core/bin/
+backups/
+test-results/
+playwright-report/
+# Build output and generated types of the web apps.
+web/apps/*/dist/
+web/apps/*/.astro/
+
+# Shared agent settings. A global gitignore often hides them, so allow them here.
+!CLAUDE.md
+!/.claude/
+/.claude/*
+!/.claude/settings.json
+!/.claude/hooks/
+!/.claude/skills/

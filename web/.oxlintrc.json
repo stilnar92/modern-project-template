@@ -1,0 +1,66 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "react", "oxc", "unicorn", "jsx-a11y"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error"
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.astro/**",
+    "**/src/schema.d.ts",
+    "**/test-results/**",
+    "**/playwright-report/**"
+  ],
+  "overrides": [
+    {
+      "files": ["packages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@app/dashboard",
+                  "@app/dashboard/*",
+                  "@app/site",
+                  "@app/site/*",
+                  "**/apps/**"
+                ],
+                "message": "Shared packages must not import an app. Move the code into a package (frontend standard, boundaries)."
+              },
+              {
+                "group": ["@mantine/*"],
+                "message": "Shared packages do not depend on the dashboard UI library. Each app renders the shared logic in its own way (ADR 0001)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/site/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@app/dashboard", "@app/dashboard/*", "**/apps/dashboard/**"],
+                "message": "The public pages must not import the dashboard. Move shared code into a package."
+              },
+              {
+                "group": ["@mantine/*"],
+                "message": "Mantine is the dashboard UI library only (ADR 0008). The public pages do not use it."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

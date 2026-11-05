@@ -1,0 +1,4 @@
+bin/
+tools/
+*_test.go
+.golangci.yml

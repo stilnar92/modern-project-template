@@ -1,0 +1,24 @@
+# Editor settings for all files (editorconfig.org). gofmt and oxfmt still
+# decide the format of Go and TypeScript. These settings cover the rest.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.go]
+indent_style = tab
+
+[Caddyfile]
+indent_style = tab
+
+[*.sql]
+indent_size = 4
+
+[*.md]
+# Two spaces at the end of a line are a line break in Markdown.
+trim_trailing_whitespace = false

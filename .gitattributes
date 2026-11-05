@@ -1,0 +1,10 @@
+# Line endings: LF in the repository and in each checkout. Shell scripts
+# (deploy/postgres/init) run inside Linux containers and fail with CRLF.
+* text=auto eol=lf
+
+# Generated files: GitHub collapses them in diffs and leaves them out of the
+# language statistics. Change the source, not these files.
+core/internal/platform/openapi/openapi.gen.go linguist-generated=true
+web/packages/api-client/src/schema.d.ts linguist-generated=true
+core/go.sum linguist-generated=true
+web/pnpm-lock.yaml linguist-generated=true

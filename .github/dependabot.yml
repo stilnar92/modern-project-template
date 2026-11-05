@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /core
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Packages that must move together go into one PR.
+    groups:
+      mantine:
+        patterns: ["@mantine/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      astro:
+        patterns: ["astro", "@astrojs/*"]
+      vite-vitest:
+        patterns: ["vite", "@vitejs/*", "vitest", "@vitest/*"]
+    ignore:
+      # ADR 0008 fixes the Mantine major version. A new major needs a decision.
+      - dependency-name: "@mantine/*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,0 +1,74 @@
+openapi: 3.1.0
+info:
+  title: Core API
+  version: 0.1.0
+  description: >
+    The contract of the core. The sections /v1/dashboard, /v1/public and
+    /v1/webhooks come with the first slice (ADR 0005, backend standard 02).
+    Run "task gen" after each change: it generates the Go server and the
+    TypeScript client.
+paths:
+  /healthz:
+    get:
+      summary: The process is alive
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+        default:
+          $ref: '#/components/responses/Problem'
+components:
+  responses:
+    Problem:
+      description: An error. The body is a Problem (RFC 9457).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      description: >
+        An error in the Problem Details format (RFC 9457, backend standard
+        02). The frontend branches on "type", not on the text. The enum is
+        the list of error types: a new type is a contract change. The
+        response never contains internal details such as SQL or stack traces.
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          description: >
+            A stable error ID. "about:blank": a plain HTTP error, and "title"
+            is the name of the status.
+          enum: ['about:blank']
+        title:
+          type: string
+          description: A short text for people. It does not change between calls.
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+          description: A text for people about this call.
+        errors:
+          type: array
+          description: Field errors of a request that is not valid.
+          items:
+            type: object
+            required: [pointer, detail]
+            properties:
+              pointer:
+                type: string
+                description: A JSON Pointer to the field, for example "/email".
+              detail:
+                type: string

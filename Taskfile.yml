@@ -1,0 +1,245 @@
+# Shared monorepo commands (ADR 0007).
+# Tool versions are in mise.toml. Install them with: mise install
+version: '3'
+
+dotenv: ['.env']
+
+env:
+  # The version of the core image: the commit, with "-dirty" for local changes.
+  VERSION:
+    sh: git describe --always --dirty 2>/dev/null || echo dev
+
+vars:
+  COMPOSE: docker compose -f deploy/compose.yaml --env-file .env
+
+tasks:
+  build:
+    desc: Build the core and the frontends
+    cmds:
+      - task: build:core
+      - task: build:web
+
+  build:core:
+    desc: Build the Go binaries
+    dir: core
+    cmds:
+      - go build ./...
+
+  build:web:
+    desc: Build all web apps (CI runs it)
+    dir: web
+    cmds:
+      - pnpm install --frozen-lockfile
+      - pnpm build
+
+  test:
+    desc: Run the core and frontend tests
+    cmds:
+      - task: test:core
+      - task: test:web
+      - task: test:hooks
+
+  test:core:
+    desc: Core tests. Integration tests start Postgres in Docker (testcontainers)
+    dir: core
+    cmds:
+      - go vet ./...
+      - go test ./...
+
+  test:web:
+    desc: Web unit tests (Vitest)
+    dir: web
+    cmds:
+      - pnpm install --frozen-lockfile
+      - pnpm test
+
+  test:hooks:
+    desc: Regression tests of the agent hooks, and the Codex copies match the Claude files
+    cmds:
+      - node --test .claude/hooks/guard.test.mjs
+      - task: test:mirrors
+
+  test:mirrors:
+    desc: Fail when a Codex copy differs from its Claude source (hooks, skills, AGENTS.md)
+    silent: true
+    cmds:
+      - |
+        fail=0
+        diff -r .claude/hooks .codex/hooks >/dev/null || { echo ".codex/hooks differs from .claude/hooks. Copy the files from .claude/hooks."; fail=1; }
+        diff -r .claude/skills .agents/skills >/dev/null || { echo ".agents/skills differs from .claude/skills. Copy the files from .claude/skills."; fail=1; }
+        for d in . core web; do
+          cmp -s "$d/CLAUDE.md" "$d/AGENTS.md" || { echo "$d/AGENTS.md differs from $d/CLAUDE.md. Copy CLAUDE.md to AGENTS.md."; fail=1; }
+        done
+        exit $fail
+
+  test:e2e:
+    desc: End-to-end tests against the started environment (task up first)
+    dir: web
+    cmds:
+      - pnpm test:e2e
+
+  mock:
+    desc: Mock API from api/openapi.yaml on http://127.0.0.1:4010 (Prism)
+    dir: web
+    cmds:
+      - pnpm mock
+
+  gen:
+    desc: Generate the Go server and the TypeScript client from api/openapi.yaml
+    cmds:
+      - task: gen:core
+      - task: gen:web
+
+  gen:core:
+    desc: Generate the Go server from api/openapi.yaml
+    dir: core
+    cmds:
+      - go generate ./...
+
+  gen:web:
+    desc: Generate the TypeScript client from api/openapi.yaml
+    dir: web
+    cmds:
+      - pnpm install --frozen-lockfile
+      - pnpm gen
+
+  gen:check:
+    desc: Fail when the generated code differs from the committed code (CI)
+    cmds:
+      - task: gen
+      - git diff --exit-code -- core web
+      - test -z "$(git status --porcelain --untracked-files=all -- core web)"
+
+  lint:
+    desc: Run all linters and architecture checks (CI runs the same command)
+    cmds:
+      - task: lint:versions
+      - task: lint:secrets
+      - task: lint:docs
+      - task: lint:core
+      - task: lint:web
+
+  lint:secrets:
+    desc: Find secrets in the git history (gitleaks)
+    cmds:
+      - gitleaks git --redact --no-banner .
+
+  lint:docs:
+    desc: Check links and headings in the tracked Markdown files (lychee, offline)
+    cmds:
+      - git ls-files -z -- '*.md' | xargs -0 lychee
+
+  audit:
+    desc: Find known vulnerabilities in the dependencies. It needs the network, so task lint does not run it
+    cmds:
+      - task: audit:go
+      - task: audit:deps
+
+  audit:go:
+    desc: govulncheck on the core. It reports only the vulnerabilities that our code calls
+    dir: core
+    cmds:
+      - go tool govulncheck ./...
+
+  audit:deps:
+    desc: osv-scanner on the web lockfile. Accepted findings, with reasons, are in osv-scanner.toml
+    cmds:
+      - osv-scanner scan source --config osv-scanner.toml -L web/pnpm-lock.yaml
+
+  lint:versions:
+    desc: Fail when go.mod, core/Dockerfile or packageManager differ from mise.toml, or the test Postgres differs from compose
+    silent: true
+    cmds:
+      - |
+        go=$(sed -nE 's/^go *= *"(.+)"/\1/p' mise.toml)
+        pnpm=$(sed -nE 's/^pnpm *= *"(.+)"/\1/p' mise.toml)
+        pg=$(sed -nE 's/^ *image: (postgres:[^ ]+)$/\1/p' deploy/compose.yaml)
+        fail=0
+        grep -q "\"$pg\"" core/internal/platform/testdb/testdb.go || { echo "core/internal/platform/testdb/testdb.go: use $pg (deploy/compose.yaml)"; fail=1; }
+        grep -qx "go $go" core/go.mod || { echo "core/go.mod: use 'go $go' (mise.toml)"; fail=1; }
+        grep -q "^FROM golang:$go-" core/Dockerfile || { echo "core/Dockerfile: use golang:$go-alpine (mise.toml)"; fail=1; }
+        grep -q "\"packageManager\": \"pnpm@$pnpm\"" web/package.json || { echo "web/package.json: use pnpm@$pnpm (mise.toml)"; fail=1; }
+        exit $fail
+
+  lint:core:
+    desc: golangci-lint, import rules, table ownership and the coupling report
+    dir: core
+    cmds:
+      - golangci-lint run ./...
+      - go run ./tools/archcheck
+
+  lint:web:
+    desc: oxlint (with app boundaries), oxfmt and TypeScript 7 (tsc)
+    dir: web
+    cmds:
+      - pnpm install --frozen-lockfile
+      - pnpm lint
+
+  env:
+    desc: Create .env from .env.example when .env does not exist. The compose project name is the folder name, so each worktree gets its own stack
+    cmds:
+      - cp .env.example .env
+      - |
+        name=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-' | sed 's/-*$//')
+        sed -i.bak "s/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=$name/" .env && rm .env.bak
+    status:
+      - test -f .env
+
+  up:
+    desc: Start the local environment, apply migrations, then start the core (http://api.localhost:8088)
+    deps: [env]
+    cmds:
+      - '{{.COMPOSE}} up -d --wait postgres s3 mailpit'
+      - task: migrate
+      - '{{.COMPOSE}} up -d --build --wait api worker caddy'
+
+  down:
+    desc: Stop the local environment (the data stays)
+    cmds:
+      - '{{.COMPOSE}} down'
+
+  reset:
+    desc: Stop the local environment and delete its data
+    prompt: This deletes the local database and files. Continue?
+    cmds:
+      - '{{.COMPOSE}} down -v'
+
+  logs:
+    desc: Follow the logs of the local environment
+    cmds:
+      - '{{.COMPOSE}} logs -f {{.CLI_ARGS}}'
+
+  migrate:
+    desc: Apply the database migrations as a separate step (task migrate -- status)
+    deps: [env]
+    cmds:
+      - '{{.COMPOSE}} run --rm --build migrate /app/migrate {{.CLI_ARGS | default "up"}}'
+
+  db:dump:
+    desc: Dump the local database into backups/ (pg_dump, custom format). Git ignores backups/
+    cmds:
+      - mkdir -p backups
+      - '{{.COMPOSE}} exec -T postgres pg_dump -U postgres -d app --format=custom > backups/app-$(date +%Y%m%d-%H%M%S).dump'
+      - ls -1t backups/*.dump | head -1
+
+  db:restore:
+    desc: Replace the local database with a dump (task db:restore -- backups/<file>.dump)
+    prompt: This replaces the local database with the dump. Continue?
+    requires:
+      vars: [CLI_ARGS]
+    cmds:
+      - test -f "{{.CLI_ARGS}}"
+      # One transaction: a failed restore leaves the old data. --clean drops each object before it creates it again.
+      - '{{.COMPOSE}} exec -T postgres pg_restore -U postgres -d app --clean --if-exists --single-transaction < "{{.CLI_ARGS}}"'
+
+  run:api:
+    desc: Start the core API on http://localhost:8080
+    dir: core
+    cmds:
+      - go run ./cmd/api
+
+  run:worker:
+    desc: Start the core worker
+    dir: core
+    cmds:
+      - go run ./cmd/worker

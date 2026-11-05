@@ -1,0 +1,23 @@
+---
+// The app shell: no content pages yet. The page shows that the core answers.
+// It renders on the server and sends no JavaScript to the browser.
+import { core } from "../lib/core";
+import { readHealth } from "../lib/health";
+
+const health = await readHealth(core);
+const label = health === "ok" ? "Core: ok" : "Core: unavailable";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Site</title>
+  </head>
+  <body>
+    <main>
+      <h1>Site</h1>
+      <p role="status">{label}</p>
+    </main>
+  </body>
+</html>

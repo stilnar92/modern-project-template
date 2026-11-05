@@ -1,0 +1,13 @@
+# Known vulnerabilities that we accept, each with a reason and an end date.
+# task audit:deps uses this file. After ignoreUntil, the check fails again,
+# so somebody looks at the finding again.
+
+[[IgnoredVulns]]
+id = "GHSA-qxc2-j82w-r537"
+ignoreUntil = 2027-05-04
+reason = """\
+@faker-js/faker 5.5.3 comes only through the Prism mock server (dev tool), \
+in postman-collection. postman-collection does not call helpers.fake, the \
+vulnerable function. faker 8+ removes faker.address, which postman-collection \
+reads at load time, so an override breaks Prism. The Dependabot alert is \
+dismissed with the same reason."""

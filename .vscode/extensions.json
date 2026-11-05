@@ -1,0 +1,9 @@
+{
+  // Editor extensions for this repository (frontend standard 33).
+  "recommendations": [
+    "oxc.oxc-vscode",
+    "golang.go",
+    "astro-build.astro-vscode",
+    "EditorConfig.EditorConfig"
+  ]
+}

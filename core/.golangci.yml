@@ -1,0 +1,23 @@
+# golangci-lint v2. Errors only, fast bug-catching linters only (D11, D12).
+# Architecture rules run separately: go run ./tools/archcheck
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - misspell
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

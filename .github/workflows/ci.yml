@@ -1,0 +1,156 @@
+# CI: linters, architecture checks and tests. No deploy.
+# core/ and web/ run separately. A change in api/ runs both.
+# mise installs the tools from mise.toml, so CI uses the same versions as local work.
+# MISE_ENABLE_TOOLS limits each job to the tools it needs. Each job has its own
+# mise cache prefix, because the tool lists differ and a cache key cannot contain commas.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    # Job permissions replace the workflow permissions, so repeat contents.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      web: ${{ steps.filter.outputs.web }}
+      hooks: ${{ steps.filter.outputs.hooks }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - api/**
+              - Taskfile.yml
+              - mise.toml
+              - .github/workflows/ci.yml
+            core:
+              - *shared
+              - core/**
+            web:
+              - *shared
+              - web/**
+            hooks:
+              - Taskfile.yml
+              - mise.toml
+              - .github/workflows/ci.yml
+              - .claude/**
+              - .codex/**
+              - .agents/**
+              - '**/CLAUDE.md'
+              - '**/AGENTS.md'
+
+  # Checks of the whole repository. They run on each change.
+  repo:
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENABLE_TOOLS: task,gitleaks,lychee,osv-scanner
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks scans the whole history, so it sees each commit of the PR.
+          fetch-depth: 0
+      - uses: jdx/mise-action@v5
+        with:
+          cache_key_prefix: mise-v1-repo
+      - run: task lint:versions
+      - run: task lint:secrets
+      - run: task lint:docs
+      - run: task audit:deps
+
+  core:
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENABLE_TOOLS: go,golangci-lint,task
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          cache_key_prefix: mise-v1-core
+      - name: Go cache paths
+        id: go
+        run: |
+          echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ${{ steps.go.outputs.mod }}
+            ${{ steps.go.outputs.build }}
+            ~/.cache/golangci-lint
+          key: go-${{ runner.os }}-${{ hashFiles('mise.toml', 'core/go.sum') }}
+          restore-keys: go-${{ runner.os }}-
+      - name: Generated code is up to date
+        run: task gen:core && git diff --exit-code -- core && test -z "$(git status --porcelain -- core)"
+      - run: task lint:core
+      - run: task test:core
+      - run: task audit:go
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENABLE_TOOLS: node,pnpm,task
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          cache_key_prefix: mise-v1-web
+      - name: pnpm store path
+        id: pnpm
+        working-directory: web
+        run: echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - name: Generated code is up to date
+        run: task gen:web && git diff --exit-code -- web && test -z "$(git status --porcelain -- web)"
+      - run: task lint:web
+      - run: task test:web
+      - run: task build:web
+
+  # Agent hooks and the Codex copies of the Claude files. The commit rule
+  # tests need Go (gofmt, go vet) and gitleaks.
+  hooks:
+    needs: changes
+    if: needs.changes.outputs.hooks == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENABLE_TOOLS: node,task,go,gitleaks
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          cache_key_prefix: mise-v1-hooks
+      - run: task test:hooks
+
+  # One stable check name for branch protection. It passes when the
+  # needed jobs pass or are skipped by the path filter.
+  ci-ok:
+    if: always()
+    needs: [changes, repo, core, web, hooks]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo '${{ toJSON(needs) }}'
+          [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "false" ]]
