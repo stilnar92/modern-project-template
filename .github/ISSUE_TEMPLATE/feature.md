@@ -22,4 +22,4 @@ From the spec deltas. The details are in the change.
 
 - [ ] All scenarios pass, and each has a test or a check
 - [ ] Review in a fresh context is done
-- [ ] Documents are updated. A learning debrief in `docs/learning/debriefs/` when the backend changed and the team keeps learning notes
+- [ ] Documents are updated. A lesson in `docs/learning/lessons/` for each problem that had a real choice

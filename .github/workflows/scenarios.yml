@@ -1,0 +1,32 @@
+# Each spec scenario of a feat/<change-id> branch needs a test or check in
+# the "Scenarios → checks" table of the PR description (AI standard 03).
+# A separate workflow, because a change of the PR description must run this
+# check again, but not the whole CI.
+name: Scenarios
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: scenarios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scenarios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      MISE_ENABLE_TOOLS: node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          cache_key_prefix: mise-v1-scenarios
+      - run: mise run test:scripts
+      - run: mise run check:scenarios

@@ -1,5 +1,5 @@
 # Local environment like production (issues #24, #25).
-# Start it with "task up". The settings come from the .env file in the repo root.
+# Start it with "mise run up". The settings come from the .env file in the repo root.
 name: ${COMPOSE_PROJECT_NAME:-app}
 
 x-core-env: &core-env
@@ -13,7 +13,7 @@ x-core-env: &core-env
   S3_SECRET_KEY: local-secret-key
   SMTP_ADDR: mailpit:1025
 
-# One image for migrate, api and worker. "task up" sets VERSION from git.
+# One image for migrate, api and worker. "mise run up" sets VERSION from git.
 x-core-image: &core-image
   image: ${COMPOSE_PROJECT_NAME:-app}-core:local
   build:
@@ -50,7 +50,7 @@ services:
       retries: 30
 
   s3:
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.52
     restart: unless-stopped
     logging: *logging
     command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
@@ -67,7 +67,7 @@ services:
 
   mailpit:
     # The image has its own healthcheck.
-    image: axllent/mailpit:v1.29.7
+    image: axllent/mailpit:v1.33.0
     restart: unless-stopped
     logging: *logging
     ports:
@@ -106,7 +106,6 @@ services:
       retries: 20
 
   worker:
-    # No healthcheck yet: the worker has no HTTP endpoint before the first job.
     <<: *core-image
     command: [/app/worker]
     restart: unless-stopped
@@ -116,9 +115,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # The worker answers /healthz on its metrics port while River runs.
+    # "mise run up" waits for it, so a worker that does not start makes the
+    # baseline red.
+    healthcheck:
+      test: [CMD, /app/worker, -healthcheck]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   caddy:
-    image: caddy:2.11.7-alpine
+    image: caddy:2.11.8-alpine
     restart: unless-stopped
     logging: *logging
     volumes:

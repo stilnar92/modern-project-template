@@ -9,7 +9,7 @@
 
 ### From Locked Decisions
 
-- **D11** — toolchain feedback speed is a first-class selection criterion: humans and AI agents run the check loop constantly, so latency multiplies. Defaults: **tsgo** for typechecking (tsc fallback where unsupported), **oxlint** for linting, **oxfmt** for formatting, **npm-run-all2** for parallel scripts. Source: [Fastest Frontend Tooling for Humans & AI](https://cpojer.net/posts/fastest-frontend-tooling).
+- **D11** — toolchain feedback speed is a first-class selection criterion: humans and AI agents run the check loop constantly, so latency multiplies. Defaults: **tsgo** for typechecking (tsc fallback where unsupported), **oxlint** for linting, **oxfmt** for formatting, `mise` tasks for parallel checks (ADR 0010; the source suggests npm-run-all2). Source: [Fastest Frontend Tooling for Humans & AI](https://cpojer.net/posts/fastest-frontend-tooling).
 
 ### Other collected points
 

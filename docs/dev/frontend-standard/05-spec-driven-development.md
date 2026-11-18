@@ -27,7 +27,7 @@ If it's unclear whether a change is trivial, it isn't.
 
 ## 3. Repository layout (OpenSpec)
 
-```
+```text
 openspec/
 ├── specs/                      # current truth: one folder per capability
 │   ├── <capability>/spec.md    #   e.g. auth-login, checkout-cart
@@ -42,7 +42,7 @@ openspec/
 
 - **Specs are per capability**, not per ticket: `openspec/specs/<capability>/spec.md` is the current truth for that capability. Capability boundaries SHOULD align with module boundaries ([12](12-architecture.md)).
 - **Changes are proposals against specs**: work enters as `openspec/changes/<change-id>/` containing proposal, design, tasks, and spec deltas.
-- The tracker ticket (e.g. Jira) links to the change-id; the proposal links back. The spec, not the ticket, is the source of truth for scope — tickets summarize, specs define.
+- The GitHub issue links to the change-id; the proposal links back. The spec, not the ticket, is the source of truth for scope — tickets summarize, specs define.
 - PRs MUST reference the change-id.
 
 ## 4. Spec format
@@ -64,7 +64,7 @@ OpenSpec's requirement–scenario structure, Gherkin-style:
 
 ## 5. Lifecycle
 
-```
+```text
 propose ──review/approve (human)──▶ implement ──gates pass──▶ archive
    ▲                                    │
    └────────── scope change ────────────┘

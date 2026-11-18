@@ -19,7 +19,7 @@
 - Each query to account data filters by `account_id`. Indexes start with `account_id`.
 - A new query on a hot path needs `EXPLAIN` in the PR description. The basis is [SQL Performance Explained](https://sql-performance-explained.com/): column order in an index, selectivity, sorting by index.
 - Paginate with a cursor on `(created_at, id)`, not with `OFFSET`.
-- The `events` log is partitioned by month ([tech stack](../tech-stack.md#backend-and-data)).
+- The `events` log is partitioned by month ([tech stack](../tech-stack.md#backend-and-data)). For now it is a plain table: [ADR 0014](../adr/0014-river-and-outbox.md) gives the trigger for the partitions.
 
 ## Transactions
 

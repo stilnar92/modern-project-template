@@ -26,7 +26,7 @@ All project text is in English and follows ASD-STE100.
 | Rule | Example |
 | --- | --- |
 | A sentence in an instruction has a maximum of 20 words; in a description, a maximum of 25 | — |
-| One instruction is one sentence, in the imperative | "Run `task test`." |
+| One instruction is one sentence, in the imperative | "Run `mise run test`." |
 | Use the active voice | "The API returns 200", not "200 is returned by the API" |
 | Use simple words with one meaning | "do", not "perform"; "start", not "initiate" |
 | Do not drop articles | "Open the file", not "Open file" |
@@ -75,4 +75,4 @@ STE fixes the form of a text. It does not make an empty text useful: the content
 ## How it is checked
 
 - The fresh-context review ([03](03-review-verification.md)) checks the text against the STE rules.
-- The rule goes into the root `CLAUDE.md` when we create it (issue #22), so the agent sees it in each session.
+- The rule is in the root `CLAUDE.md`, section "Language", so the agent sees it in each session.

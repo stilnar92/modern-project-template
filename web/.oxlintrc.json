@@ -12,6 +12,9 @@
     "**/dist/**",
     "**/.astro/**",
     "**/src/schema.d.ts",
+    "**/src/gen/**",
+    "packages/tokens/css/**",
+    "**/src/paraglide/**",
     "**/test-results/**",
     "**/playwright-report/**"
   ],

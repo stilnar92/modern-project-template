@@ -1,0 +1,23 @@
+---
+// The document of each public page. The page renders on the server and
+// sends no JavaScript to the browser.
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Before the first paint, so the dark scheme does not flash white (modern-web-guidance "dark-mode"). -->
+    <meta name="color-scheme" content="light dark" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

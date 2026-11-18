@@ -6,6 +6,8 @@ This layout implements [ADR 0002](../docs/dev/adr/0002-specs-openspec-hybrid.md)
 - `changes/<change-id>/` contains a proposal, design, tasks, and capability deltas.
 - `changes/archive/` holds completed changes after their deltas are applied.
 - `templates/` contains source templates. Replace angle-bracket fields when copying them.
+- `changes/<change-id>/progress.md` is the progress file of a task longer than one session.
+  Copy it from `templates/progress.md`. The orchestrator reads it after each context compaction.
 
 Use `/to-spec <change-id> <request>` to draft a change and `/to-tickets <change-id>`
 to divide it into verifiable slices. Both skills are in `.claude/skills/`.

@@ -40,7 +40,7 @@ func RequestError(logger *slog.Logger) func(http.ResponseWriter, *http.Request, 
 // log and to error tracking, and the client gets only the status.
 func ServerError(logger *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		observability.ReportError(logger.With("method", r.Method, "path", r.URL.Path), "request failed", err)
+		observability.ReportError(r.Context(), logger.With("method", r.Method, "path", r.URL.Path), "request failed", err)
 		Write(w, http.StatusInternalServerError, "")
 	}
 }

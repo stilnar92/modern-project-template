@@ -4,7 +4,7 @@
 // Exit 0: allow. Exit 2: block (PreToolUse) or report to the agent
 // (PostToolUse). The message goes to stderr.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 
 const event = JSON.parse(readFileSync(0, "utf8") || "{}");
@@ -55,6 +55,7 @@ const SHARED = [
   /^core\/migrations\//,
   /(^|\/)events\.md$/,
   /(^|\/)CONTEXT\.md$/,
+  /(^|\/)THESAURUS\.md$/,
   /^openspec\/specs\//,
 ];
 
@@ -73,6 +74,12 @@ function checkShared() {
 // docs/ branch (tooling and bug fixes need no proposal), or on feat/<id>
 // when openspec/changes/<id>/proposal.md has the line "Status: approved".
 const CODE = /^(core|web)\/.+\.(go|sql|ts|tsx|astro|css)$/;
+
+// One test for "approved", used by the edit check and the session start, so
+// they always agree. Plain "Status: approved" and bold Markdown
+// ("**Status:** approved", "**Status: approved**") pass. "Status: draft" fails.
+const APPROVED = /^(\*\*)?Status:(\*\*)?\s*approved(\*\*)?\s*$/im;
+const isApproved = (proposal) => APPROVED.test(readFileSync(proposal, "utf8"));
 const NO_PLAN_NEEDED = /^(chore|fix|docs)\//;
 
 function checkPlan() {
@@ -91,7 +98,7 @@ function checkPlan() {
         `openspec/changes/<change-id>/proposal.md, or a chore/, fix/ or docs/ branch (AI standard 01).`,
     );
   }
-  if (!/^\**Status:?\**:?\s*approved\b/im.test(readFileSync(proposal, "utf8"))) {
+  if (!isApproved(proposal)) {
     block(`Blocked: ${path.relative(fileTop, proposal)} has no "Status: approved" line. The owner approves the plan first.`);
   }
 }
@@ -402,6 +409,88 @@ function checkCommit() {
   }
 }
 
+// --- Rule 8: no shell reads of local secret files ---------------------------
+// Claude Code denies reading .env through permissions.deny, but the Codex CLI
+// has no such list (AI standard 02, "Secrets"). This rule blocks the shell
+// programs that print or load a .env file. "--env-file .env" of docker
+// compose passes: it gives the file to the containers, not to the agent.
+// .env.example stays readable. Like the other rules, it stops honest
+// mistakes, not a script that opens the file itself.
+const SECRET_FILE = /(^|\/)\.env(\.local|\.production|\.[^./]+\.local)?$/;
+const READERS = new Set(["cat", "head", "tail", "less", "more", "grep", "egrep", "rg", "sed", "awk", "bat", "nl", "xxd", "od", "strings", "cut", "sort", "base64", "source", ".", "cp", "diff"]);
+
+function checkSecretRead() {
+  if (event.hook_event_name !== "PreToolUse" || tool !== "Bash") return;
+  for (const words of bashCommands(String(input.command || ""))) {
+    const at = words.findIndex((w) => !/^\w+=/.test(w));
+    if (at < 0 || !READERS.has(path.basename(words[at]))) continue;
+    if (words.slice(at + 1).some((w) => SECRET_FILE.test(w.replace(/^<+/, "")))) {
+      block("Blocked: do not read .env files: they hold local secrets. Read .env.example for the names (AI standard 02, \"Secrets\").");
+    }
+  }
+}
+
+// --- Rule 7: task state after a context compaction ------------------------
+// A summary keeps the work and loses the role and the reasons (AI standard
+// 07). After a compaction or a resume, tell the orchestrator to read the
+// progress file before it does anything. The text goes into the context.
+function progressFiles() {
+  const id = git(["branch", "--show-current"]).replace(/^feat\//, "");
+  const own = path.join("openspec", "changes", id, "progress.md");
+  if (id && existsSync(path.join(root, own))) return [own];
+  const changes = path.join(root, "openspec", "changes");
+  if (!existsSync(changes)) return [];
+  // Archived changes are one level deeper (archive/<date-id>/), so they do not match.
+  return readdirSync(changes)
+    .map((d) => path.join("openspec", "changes", d, "progress.md"))
+    .filter((f) => existsSync(path.join(root, f)));
+}
+
+// --- Rule 9: task state into the context at the start ---------------------
+// A new session gets the phase of its branch (AI standard 01, 02): the agent
+// knows what it may do before it reads the whole process.
+function taskState() {
+  const branch = git(["branch", "--show-current"]);
+  if (!branch || /^(main|master)$/.test(branch)) {
+    return `Branch: ${branch || "detached HEAD"}. Code edits are blocked here. Create a branch first: feat/<change-id> for a feature, chore/, fix/ or docs/ for other work (AI standard 01).`;
+  }
+  const feat = branch.match(/^feat\/(.+)$/);
+  if (!feat) {
+    return `Branch: ${branch}. Setup, fix or docs work: no proposal is necessary. Finish with "mise run check" and a PR (AI standard 01).`;
+  }
+  const dir = path.join("openspec", "changes", feat[1]);
+  const proposal = path.join(root, dir, "proposal.md");
+  if (!existsSync(proposal)) {
+    return `Branch: ${branch}. Phase: plan. ${dir}/proposal.md does not exist: write it with /to-spec. Code edits stay blocked until the owner approves it.`;
+  }
+  if (!isApproved(proposal)) {
+    return `Branch: ${branch}. Phase: plan. ${dir}/proposal.md waits for the owner's approval. Do not write code yet.`;
+  }
+  const tasks = path.join(root, dir, "tasks.md");
+  const open = existsSync(tasks) ? (readFileSync(tasks, "utf8").match(/^\s*- \[ \]/gm) || []).length : 0;
+  return `Branch: ${branch}. Phase: code. The proposal is approved. Open tasks in ${dir}/tasks.md: ${open}. Keep ${dir}/progress.md up to date for a long task.`;
+}
+
+function checkSessionStart() {
+  if (event.hook_event_name !== "SessionStart") return;
+  if (["startup", "clear"].includes(event.source)) {
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: taskState() } }));
+    process.exit(0);
+  }
+  if (!["compact", "resume"].includes(event.source)) return;
+  const files = progressFiles().map((f) => f.split(path.sep).join("/"));
+  const text =
+    files.length > 0
+      ? `The context was ${event.source === "compact" ? "compacted" : "resumed"}. Before you do anything, read ${files.join(", ")}. ` +
+        "Then check each subagent that it lists: a subagent can still run or be already finished (AI standard 07)."
+      : "The context was compacted or resumed. No progress file exists for this branch. If the task is longer than one session, " +
+        "create openspec/changes/<change-id>/progress.md from openspec/templates/progress.md (AI standard 01).";
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: text } }));
+  process.exit(0);
+}
+
+checkSessionStart();
+checkSecretRead();
 checkShared();
 checkPlan();
 checkPush();

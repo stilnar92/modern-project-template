@@ -56,7 +56,7 @@ Each decision records what it prefers and what it gives up. Use these nine axes,
 | Operability | Easy to deploy, monitor and fix in production |
 | Cost | Money and time to build and to run |
 
-The project priorities say what the project is willing to be bad at. They are the reference for each later decision. The owner sets them in issue #39.
+The project priorities say what the project is willing to be bad at. They are the reference for each later decision.
 
 ### Stress round
 
@@ -92,16 +92,12 @@ Codex runs the round as an adversarial review ([03](03-review-verification.md)).
 
 ## Learning during development
 
-We learn through tasks: we explain what appears in the task. The materials are in [docs/learning/](../../learning/README.md). The agent is a teacher here, not only an executor.
+The owner learns from the real problems of the tasks. The format, the rules and the list of lessons are in [docs/learning/](../../learning/README.md).
 
-- **Before a task,** the agent reads the [concept map](../../learning/concepts.md): what the owner has already seen, understands, can do alone.
-- **During the task:** if a part of the task is within reach and the technique appeared before, the agent offers it to the owner. The agent writes a failing test and explains the task. Hints come as a ladder: the idea, where to look, and only then a piece of code. The agent does not give the finished solution at once.
-- **At the end of the task,** the agent writes a [debrief](../../learning/debriefs/README.md): what we did, how, why this way, what is new, what appeared before, self-check questions. The agent explains even if the owner does not understand everything yet: first the big picture, then the details; analogies with the frontend, Django and Node.js; hard parts marked "you can skip this for now".
-- **Topics familiar from Django or Node:** do not skip them and do not explain them from zero. First ask a short question to check the owner's idea. Correct what is forgotten or wrong and record it in the [concept map](../../learning/concepts.md#corrected-ideas).
-- **Repeats:** highlight them with a link to earlier debriefs: what is the same, what is different. Before you explain a repeated technique, ask: "how do you think they did it here?".
-- **The concept map** gets an update after the debrief: the number of encounters and the level "seen → understand → can do alone". The level goes up when the owner explains in their own words or does the work alone.
-- **A concept appeared three times but stays at "seen":** the agent offers a separate exercise.
-- **Difficulty adapts in both directions** ([rules](../../learning/README.md)). If it was hard, the topic goes to the ["Review"](../../learning/concepts.md#review) section: next time a smaller piece, a worked example first, hints at once, a simpler explanation, and a return to the topic within 1–2 tasks. If it was easy, the bar goes up. Before a task, the agent checks the "Review" section.
-- **Review of the owner's code:** like a mentor: what is good, what is more idiomatic in Go and why, with a link to a source.
-- **A new technology in the project:** in the same change, the agent adds it to the [topic map](../../learning/backend-path.md): a topic or a level with an exercise, sources and a "mastered when" criterion. Then the agent removes it from the "waiting their turn" list.
-- The Claude Code "Learning" output style (the agent leaves code parts for the human, marked `TODO(human)`) is good for tasks where the owner writes code. Turn it on in `/config`, and check that the current version has it.
+- **A lesson is one problem, not one PR.** When a change solved a problem that had a real choice, the agent writes a lesson in the same PR. One PR can give several lessons. A PR with no real choice gives none.
+- **Each lesson has the same sections:** problem, predict first, theory with sources, options, edge cases, decision, the files to read, check yourself.
+- **The theory stands without the project,** and each source is real: the agent opens each link before it adds it.
+- **The agent takes the options and the edge cases from the session:** what it considered, what it rejected and why. It does not invent them after the work.
+- **A later change that replaces a decision** also changes the lesson, in the same PR.
+- **To study a lesson,** the owner runs `/lesson <number>`. The agent is then a tutor: it asks before it explains, and it does not change a file ([how](../../learning/README.md#study-a-lesson-with-an-agent)).
+- **When the owner asks about a topic,** the agent asks for a prediction first, and then explains.

@@ -1,23 +1,18 @@
 ---
 // The app shell: no content pages yet. The page shows that the core answers.
-// It renders on the server and sends no JavaScript to the browser.
+import { m } from "@app/i18n";
+import Base from "../layouts/Base.astro";
 import { core } from "../lib/core";
 import { readHealth } from "../lib/health";
+import { heading, page, status } from "../styles/ui";
 
 const health = await readHealth(core);
-const label = health === "ok" ? "Core: ok" : "Core: unavailable";
+const label = health === "ok" ? m.core_status_ok() : m.core_status_unavailable();
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Site</title>
-  </head>
-  <body>
-    <main>
-      <h1>Site</h1>
-      <p role="status">{label}</p>
-    </main>
-  </body>
-</html>
+<Base title={m.site_title()}>
+  <main class={page()}>
+    <h1 class={heading()}>{m.site_title()}</h1>
+    <p role="status" class={status({ state: health === "ok" ? "ok" : "unavailable" })}>{label}</p>
+  </main>
+</Base>

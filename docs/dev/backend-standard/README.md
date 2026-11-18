@@ -4,7 +4,7 @@
 
 The rules for the Go core: modules, API, data, background jobs and integrations, security, observability and tests. The standard is for agents and people. Each rule must be clear without the question "what did they mean?".
 
-**How to use it**
+## How to use it
 
 1. Start with [00-overview.md](00-overview.md): the fixed decisions B1–B12 and the map of sections.
 2. The [tech stack](../tech-stack.md#backend-and-data) selects the technologies and libraries. This standard gives the rules for using them. The core boundaries are in the [architecture](../architecture.md).

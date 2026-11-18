@@ -5,14 +5,13 @@ package testdb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -80,19 +79,27 @@ func Start(t testing.TB) *DB {
 	return d
 }
 
+// migrate applies the goose migrations and the River tables, as the
+// migrate command does.
 func migrate(t testing.TB, dsn string) {
 	t.Helper()
-	sqlDB, err := sql.Open("pgx", dsn)
+	ctx := context.Background()
+	owner, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer owner.Close()
+	sqlDB := stdlib.OpenDBFromPool(owner)
 	defer func() { _ = sqlDB.Close() }()
 	provider, err := goose.NewProvider(goose.DialectPostgres, sqlDB, migrations.FS)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.Up(context.Background()); err != nil {
+	if _, err := provider.Up(ctx); err != nil {
 		t.Fatalf("migrate: %v", err)
+	}
+	if _, err := migrations.River(ctx, owner); err != nil {
+		t.Fatalf("migrate river: %v", err)
 	}
 }
 

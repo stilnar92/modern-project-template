@@ -4,6 +4,15 @@
 
 ---
 
+## In this project
+
+- `@app/api-client`: `unwrap` turns an openapi-fetch result into data or an `ApiError`. `toProblem` turns any thrown value into a Problem: a network failure is status 0, and a body that is not a Problem keeps only its status. `problemKind` gives the kind for UX standard U14: validation, refused, unauthenticated, forbidden, not found, service.
+- Dashboard (`apps/dashboard/src/errors`):
+  - Each route tree has `RouteError` as its `ErrorBoundary`. A 404 of the router is "not found", not a service failure.
+  - A failed mutation shows a Mantine notification (`notifyProblem`).
+  - A form sets `meta: { handlesErrors: true }` on its mutation and calls `applyProblem`: field errors go next to the fields, the values stay, and other errors go to a notification.
+- The texts for each kind are in `apps/dashboard/src/errors/messages.ts`. A refusal by a business rule shows the `detail` of the server: the backend owns the rule.
+
 ## Collected points
 
 ### Errors as values (Go-style, typed)

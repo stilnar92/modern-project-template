@@ -4,6 +4,8 @@
 
 ---
 
+**In this project:** the site uses Tailwind 4 (Vite plugin) and tailwind-variants. The variants are in `apps/site/src/styles/ui.ts`, and a page takes a variant, not a class string. tailwind-variants runs on the server, so the page sends no JavaScript. The dashboard uses Mantine and its theme ([ADR 0008](../adr/0008-dashboard-mantine.md)), not Tailwind.
+
 ## Collected points
 
 ### From Locked Decisions

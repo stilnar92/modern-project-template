@@ -1,0 +1,21 @@
+# Markdown style: mise run lint:docs (rumdl check). rumdl fmt fixes a part.
+
+[global]
+# MD013 (line length): the docs keep each paragraph on one line, and the
+# editor wraps it. Hard line breaks make diffs of prose hard to read.
+disable = ["MD013"]
+
+[MD033]
+# Collapsible sections in long documents.
+allowed-elements = ["details", "summary"]
+
+[per-file-ignores]
+# GitHub fills the issue and PR templates into a form. They have no H1 by design.
+".github/ISSUE_TEMPLATE/*.md" = ["MD041"]
+".github/pull_request_template.md" = ["MD041"]
+# OpenSpec templates: a delta starts at "## ADDED Requirements", and
+# <placeholders> show what to fill in.
+"openspec/templates/*.md" = ["MD033", "MD041"]
+# The UX reference is a copy of the source without changes (ADR 0011).
+# One row of sources.md has an extra cell in the source.
+"docs/dev/ux-standard/reference/*.md" = ["MD056"]

@@ -1,9 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: <Name>
+
 The system SHALL <observable behavior>.
 
 #### Scenario: <Name>
+
 - GIVEN <initial state>
 - WHEN <action>
 - THEN <observable result>

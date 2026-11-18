@@ -1,7 +1,7 @@
 # 0007 — Monorepo: folders by stack
 
 Date: 2026-10-28
-Status: accepted
+Status: accepted. The Taskfile part is superseded by [0010](0010-mise-single-toolchain.md)
 
 ## Context
 
@@ -13,7 +13,7 @@ For now, development is only local. We have not selected a server, but the first
 
 **Folders by stack:**
 
-```
+```text
 api/openapi.yaml        contract
 openspec/               specs (ADR 0002)
 core/                   Go: one go.mod

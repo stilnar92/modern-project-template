@@ -1,4 +1,4 @@
-// Regression tests for guard.mjs. Run: task test:hooks
+// Regression tests for guard.mjs. Run: mise run test:hooks
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -130,7 +130,7 @@ test("a subagent cannot merge a PR, the main agent can", () => {
 
 test("a subagent cannot change shared files", () => {
   const sub = { agent_id: "a1", agent_type: "general-purpose" };
-  for (const file of ["api/openapi.yaml", "core/migrations/00002_x.sql", "docs/dev/CONTEXT.md", "openspec/specs/x/spec.md"]) {
+  for (const file of ["api/openapi.yaml", "core/migrations/00002_x.sql", "docs/dev/CONTEXT.md", "docs/dev/THESAURUS.md", "openspec/specs/x/spec.md"]) {
     assert.equal(edit(file, sub), 2, file);
   }
   assert.equal(edit("api/openapi.yaml"), 0, "the main agent can");
@@ -151,6 +151,12 @@ test("a feat branch needs an approved proposal", () => {
     assert.equal(edit("core/cmd/worker/main.go"), 2, "draft proposal");
     writeFileSync(path.join(dir, "proposal.md"), "# Try\n\nStatus: approved\n");
     assert.equal(edit("core/cmd/worker/main.go"), 0, "approved proposal");
+    for (const line of ["**Status:** approved", "**Status: approved**"]) {
+      writeFileSync(path.join(dir, "proposal.md"), `# Try\n\n${line}\n`);
+      assert.equal(edit("core/cmd/worker/main.go"), 0, line);
+    }
+    writeFileSync(path.join(dir, "proposal.md"), "# Try\n\nStatus: approved later\n");
+    assert.equal(edit("core/cmd/worker/main.go"), 2, "extra words after approved");
   } finally {
     sh(["checkout", "-q", "chore/x"]);
   }
@@ -269,6 +275,65 @@ test("a commit with clean files passes", () => {
       assert.equal(bash(cmd), 0, cmd);
     }
   } finally {
+    reset();
+  }
+});
+
+// SessionStart: the hook prints JSON, and Claude Code adds its text to the context.
+function sessionStart(source, cwd = repo) {
+  const r = spawnSync("node", [guard], {
+    input: JSON.stringify({ cwd, hook_event_name: "SessionStart", source }),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: repo },
+    encoding: "utf8",
+  });
+  return { status: r.status, text: r.stdout ? JSON.parse(r.stdout).hookSpecificOutput.additionalContext : "" };
+}
+
+test("after a compaction the orchestrator is told to read the progress file", () => {
+  try {
+    const none = sessionStart("compact");
+    assert.equal(none.status, 0);
+    assert.match(none.text, /No progress file/);
+    for (const d of ["demo", "archive/old"]) mkdirSync(path.join(repo, "openspec/changes", d), { recursive: true });
+    write("openspec/changes/demo/progress.md", "# Progress: demo\n");
+    write("openspec/changes/archive/old/progress.md", "# Progress: old\n");
+    for (const source of ["compact", "resume"]) {
+      const found = sessionStart(source);
+      assert.equal(found.status, 0, source);
+      assert.match(found.text, /read openspec\/changes\/demo\/progress\.md\./, source);
+      assert.doesNotMatch(found.text, /archive/, source);
+    }
+  } finally {
+    reset();
+  }
+});
+
+test("shell reads of .env files are blocked, other uses pass", () => {
+  for (const c of ["cat .env", "head -5 ./.env", "grep KEY .env.local", "sed -n 1p deploy/.env.production", "set -a; . ./.env", "bash -c 'tail .env'"]) {
+    assert.equal(bash(c), 2, c);
+  }
+  for (const c of ["cat .env.example", "docker compose --env-file .env up -d", "ls -a", "grep env README.md", "mise run up"]) {
+    assert.equal(bash(c), 0, c);
+  }
+});
+
+test("a new session gets the phase of its branch", () => {
+  try {
+    assert.match(sessionStart("startup").text, /Branch: chore\/x\. Setup, fix or docs work/);
+    assert.doesNotMatch(sessionStart("startup").text, /progress\.md/, "a new session gets no compaction reminder");
+    sh(["checkout", "-q", "-b", "feat/phase"]);
+    assert.match(sessionStart("startup").text, /Phase: plan\. .*proposal\.md does not exist/);
+    mkdirSync(path.join(repo, "openspec/changes/phase"), { recursive: true });
+    write("openspec/changes/phase/proposal.md", "# Phase\n\nStatus: draft\n");
+    assert.match(sessionStart("clear").text, /waits for the owner's approval/);
+    // Bold Markdown counts as approved here too, the same as in the edit check.
+    write("openspec/changes/phase/proposal.md", "# Phase\n\n**Status:** approved\n");
+    write("openspec/changes/phase/tasks.md", "- [x] done\n- [ ] one\n- [ ] two\n");
+    assert.match(sessionStart("startup").text, /Phase: code\. .*Open tasks in openspec\/changes\/phase\/tasks\.md: 2\./);
+    // main is checked out in the second worktree.
+    assert.match(sessionStart("startup", path.join(repo, "wt-main")).text, /Branch: main\. Code edits are blocked here/);
+  } finally {
+    sh(["checkout", "-q", "chore/x"]);
     reset();
   }
 });

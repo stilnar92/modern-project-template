@@ -1,0 +1,93 @@
+/* Generated from packages/tokens/src/tokens.ts by "pnpm gen". Do not edit. */
+:root {
+  color-scheme: light dark;
+  --ms-gray-0: #f8f9fa;
+  --ms-gray-1: #f1f3f5;
+  --ms-gray-2: #e9ecef;
+  --ms-gray-3: #dee2e6;
+  --ms-gray-4: #ced4da;
+  --ms-gray-5: #adb5bd;
+  --ms-gray-6: #868e96;
+  --ms-gray-7: #495057;
+  --ms-gray-8: #343a40;
+  --ms-gray-9: #212529;
+  --ms-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ms-radius-sm: 0.25rem;
+  --ms-radius-md: 0.5rem;
+  --ms-radius-lg: 1rem;
+  --ms-brand-0: #e7f5ff;
+  --ms-brand-1: #d0ebff;
+  --ms-brand-2: #a5d8ff;
+  --ms-brand-3: #74c0fc;
+  --ms-brand-4: #4dabf7;
+  --ms-brand-5: #339af0;
+  --ms-brand-6: #228be6;
+  --ms-brand-7: #1c7ed6;
+  --ms-brand-8: #1971c2;
+  --ms-brand-9: #1864ab;
+  --ms-surface-light: #ffffff;
+  --ms-surface-dark: #212529;
+  --ms-text-light: #212529;
+  --ms-text-dark: #f8f9fa;
+  --ms-text-muted-light: #495057;
+  --ms-text-muted-dark: #ced4da;
+  --ms-border-light: #dee2e6;
+  --ms-border-dark: #495057;
+  --ms-accent-light: #1971c2;
+  --ms-accent-dark: #74c0fc;
+  --ms-on-accent-light: #ffffff;
+  --ms-on-accent-dark: #212529;
+  --ms-surface: var(--ms-surface-light);
+  --ms-text: var(--ms-text-light);
+  --ms-text-muted: var(--ms-text-muted-light);
+  --ms-border: var(--ms-border-light);
+  --ms-accent: var(--ms-accent-light);
+  --ms-on-accent: var(--ms-on-accent-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ms-surface: var(--ms-surface-dark);
+    --ms-text: var(--ms-text-dark);
+    --ms-text-muted: var(--ms-text-muted-dark);
+    --ms-border: var(--ms-border-dark);
+    --ms-accent: var(--ms-accent-dark);
+    --ms-on-accent: var(--ms-on-accent-dark);
+  }
+}
+
+@supports (color: light-dark(white, black)) {
+  :root {
+    --ms-surface: light-dark(var(--ms-surface-light), var(--ms-surface-dark));
+    --ms-text: light-dark(var(--ms-text-light), var(--ms-text-dark));
+    --ms-text-muted: light-dark(var(--ms-text-muted-light), var(--ms-text-muted-dark));
+    --ms-border: light-dark(var(--ms-border-light), var(--ms-border-dark));
+    --ms-accent: light-dark(var(--ms-accent-light), var(--ms-accent-dark));
+    --ms-on-accent: light-dark(var(--ms-on-accent-light), var(--ms-on-accent-dark));
+  }
+}
+
+:root[data-palette="teal"] {
+  --ms-brand-0: #e6fcf5;
+  --ms-brand-1: #c3fae8;
+  --ms-brand-2: #96f2d7;
+  --ms-brand-3: #63e6be;
+  --ms-brand-4: #38d9a9;
+  --ms-brand-5: #20c997;
+  --ms-brand-6: #12b886;
+  --ms-brand-7: #0ca678;
+  --ms-brand-8: #099268;
+  --ms-brand-9: #087f5b;
+  --ms-surface-light: #ffffff;
+  --ms-surface-dark: #212529;
+  --ms-text-light: #212529;
+  --ms-text-dark: #f8f9fa;
+  --ms-text-muted-light: #495057;
+  --ms-text-muted-dark: #ced4da;
+  --ms-border-light: #dee2e6;
+  --ms-border-dark: #495057;
+  --ms-accent-light: #087f5b;
+  --ms-accent-dark: #63e6be;
+  --ms-on-accent-light: #ffffff;
+  --ms-on-accent-dark: #212529;
+}

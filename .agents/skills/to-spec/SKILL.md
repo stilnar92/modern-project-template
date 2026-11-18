@@ -1,6 +1,6 @@
 ---
 name: to-spec
-description: Draft or revise an OpenSpec proposal for this project and capability deltas from a requested behavior change.
+description: Draft or revise an OpenSpec proposal for this project and capability deltas from a requested behavior change. Use when the owner asks for a new feature or a behavior change, before any code is written.
 ---
 
 # Draft an OpenSpec change

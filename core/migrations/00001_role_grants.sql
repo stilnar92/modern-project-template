@@ -4,6 +4,11 @@
 -- each table that the owner creates later.
 
 -- +goose Up
+-- Each migration sets time limits, so a migration that waits for a lock
+-- fails fast and does not block the application (squawk). SET LOCAL keeps
+-- them inside the transaction of this migration.
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
 GRANT USAGE ON SCHEMA public TO app_app, app_system;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_app, app_system;
@@ -11,6 +16,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE, SELECT ON SEQUENCES TO app_app, app_system;
 
 -- +goose Down
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     REVOKE USAGE, SELECT ON SEQUENCES FROM app_app, app_system;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public

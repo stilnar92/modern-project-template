@@ -29,19 +29,19 @@ Source: [React Performance Monitoring](https://3perf.com/blog/react-monitoring/)
 
 Source: [When and what should I be logging?](https://blog.sentry.io/logging-best-practices/) (Sentry). Intro-level restatement of established practice; fills the "what/when" gap under D13's structured-logging requirement.
 
-**What to log**
+#### What to log
 
 - **Runtime decisions** — every branch taken on a condition (`isMobile`, feature flags, experiment buckets) is logged with its resolved value, including the feature-toggle configuration, so the code path of a given session can be reconstructed after the fact.
 - **Steps of multi-step flows** — a long sequential process logs each step and its result, not only the final outcome.
 - **Audit events** — when a user or the system acts, log who did what: every create, update, and delete of an entity.
 - **Context around errors** — the error alone is not enough; the retry attempt, status code, URL, and anything else needed to debug travel with it. Complements the typed errors carrying structured data in [27](27-error-handling.md).
 
-**How to write logs**
+#### How to write logs
 
 - **Structured, not stringly** — log records are objects (JSON), not formatted messages. Each record answers *what happened*, *who did it*, *when it happened*.
 - **Context accumulates** — a session may start unauthenticated; once identity is known (`userId` after sign-in), it flows into every subsequent log. Related records are linked across a flow via tracing / correlation IDs.
 
-**What not to log**
+#### What not to log
 
 - **Excessive logging** — not every function call and not every line; noise buries signal.
 - **Secrets and personal data** — see [31 — Security](31-security.md).

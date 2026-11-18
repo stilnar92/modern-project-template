@@ -6,5 +6,7 @@
 # language statistics. Change the source, not these files.
 core/internal/platform/openapi/openapi.gen.go linguist-generated=true
 web/packages/api-client/src/schema.d.ts linguist-generated=true
+web/packages/api-client/src/gen/** linguist-generated=true
 core/go.sum linguist-generated=true
 web/pnpm-lock.yaml linguist-generated=true
+web/packages/tokens/css/** linguist-generated=true

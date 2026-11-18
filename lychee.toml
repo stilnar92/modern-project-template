@@ -1,4 +1,4 @@
-# Link check for the Markdown docs: task lint:docs.
+# Link check for the Markdown docs: mise run lint:docs.
 # Offline: only links to local files and their headings. No network calls,
 # so the check is fast and does not fail when an external site is down.
 offline = true

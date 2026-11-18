@@ -1,3 +1,4 @@
+import { unwrap } from "@app/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api";
 import type { HealthState } from "./HealthStatus";
@@ -6,11 +7,7 @@ import type { HealthState } from "./HealthStatus";
 export function useHealth(): HealthState {
   const health = useQuery({
     queryKey: ["health"],
-    queryFn: async () => {
-      const { data } = await api.GET("/healthz");
-      if (!data) throw new Error("The core did not answer");
-      return data.status;
-    },
+    queryFn: async () => unwrap(await api.GET("/healthz")).status,
     retry: false,
   });
   if (health.isPending) return "loading";
