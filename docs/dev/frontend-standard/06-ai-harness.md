@@ -14,7 +14,7 @@
 Common shape: *docs define the rule → harness drives the app → AI judges against the rule* (D10 extended to runtime). In rough value order:
 
 1. **Spec scenarios → executable verification** — OpenSpec scenarios are already GIVEN/WHEN/THEN ([05](05-spec-driven-development.md)); an agent walks them against the running app after implementation.
-2. **Responsive sweep** — screenshots of key screens across many widths (including in-between zones per D14), AI-reviewed against the fluid-first rules.
+2. **Responsive sweep** — screenshots of key screens across many widths (including in-between zones per D14), AI-reviewed against the fluid-first rules. Started: the real-viewport e2e projects in `web/e2e/viewports.ts` ([10](10-browser-support.md#real-viewports-d9-d14)).
 3. **A11y walk** — axe checks + agent-driven keyboard-only navigation of APG patterns ([22](22-accessibility.md)).
 4. **Cross-browser smoke** — same flows on WebKit/Firefox in CI (D9).
 5. **Regression triage** — observability alerts ([32](32-observability.md)) wake an agent to investigate and file a reproduction.

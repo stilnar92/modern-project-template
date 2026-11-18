@@ -18,3 +18,9 @@ web/apps/*/.astro/
 !/.claude/settings.json
 !/.claude/hooks/
 !/.claude/skills/
+!/.claude/agents/
+
+# Docs viewer (ADR 0016): generated content, build output and cache.
+tools/docs-viewer/content/
+tools/docs-viewer/.vitepress/dist/
+tools/docs-viewer/.vitepress/cache/

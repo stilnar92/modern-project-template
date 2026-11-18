@@ -5,25 +5,51 @@ info:
   description: >
     The contract of the core. The sections /v1/dashboard, /v1/public and
     /v1/webhooks come with the first slice (ADR 0005, backend standard 02).
-    Run "task gen" after each change: it generates the Go server and the
+    Run "mise run gen" after each change: it generates the Go server and the
     TypeScript client.
+servers:
+  - url: http://api.localhost:8088
+    description: The local environment (mise run up)
+tags:
+  - name: system
+    description: Service endpoints for operations, not for users
 paths:
   /healthz:
     get:
       summary: The process is alive
       operationId: getHealth
+      tags: [system]
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                required: [status]
-                properties:
-                  status:
-                    type: string
-                    const: ok
+                $ref: '#/components/schemas/Status'
+              example:
+                status: ok
+        default:
+          $ref: '#/components/responses/Problem'
+  /readyz:
+    get:
+      summary: The process can serve requests
+      description: >
+        200 when the database answers. 503 when it does not, so a proxy or an
+        orchestrator stops sending traffic to this process. The liveness check
+        is /healthz.
+      operationId: getReady
+      tags: [system]
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              example:
+                status: ok
+        '503':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
 components:
@@ -34,7 +60,19 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Not Found
+            status: 404
   schemas:
+    Status:
+      description: The answer of a system check.
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
     Problem:
       description: >
         An error in the Problem Details format (RFC 9457, backend standard
@@ -43,6 +81,11 @@ components:
         response never contains internal details such as SQL or stack traces.
       type: object
       required: [type, title, status]
+      examples:
+        - type: about:blank
+          title: Not Found
+          status: 404
+          detail: The page does not exist.
       properties:
         type:
           type: string
@@ -50,19 +93,26 @@ components:
             A stable error ID. "about:blank": a plain HTTP error, and "title"
             is the name of the status.
           enum: ['about:blank']
+          examples: ['about:blank']
         title:
           type: string
           description: A short text for people. It does not change between calls.
+          examples: [Not Found]
         status:
           type: integer
           minimum: 100
           maximum: 599
+          examples: [404]
         detail:
           type: string
           description: A text for people about this call.
+          examples: [The page does not exist.]
         errors:
           type: array
           description: Field errors of a request that is not valid.
+          examples:
+            - - pointer: /price
+                detail: The price must be more than 0.
           items:
             type: object
             required: [pointer, detail]

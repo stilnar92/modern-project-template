@@ -1,0 +1,35 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "core_status_checking": "Ядро: проверяем…",
+  "core_status_ok": "Ядро: ok",
+  "core_status_unavailable": "Ядро: недоступно",
+  "dashboard_title": "Панель управления",
+  "site_title": "Сайт",
+  "error_validation_title": "Проверьте поля формы",
+  "error_validation_action": "Исправьте отмеченные поля и отправьте снова.",
+  "error_refused_title": "Действие не выполнено",
+  "error_refused_action": "Причина указана ниже.",
+  "error_unauthenticated_title": "Сессия закончилась",
+  "error_unauthenticated_action": "Войдите снова.",
+  "error_forbidden_title": "Нет доступа",
+  "error_forbidden_action": "У этого аккаунта нет прав на это действие.",
+  "error_not_found_title": "Не найдено",
+  "error_not_found_action": "Возможно, это уже удалили.",
+  "error_service_title": "Сервис временно недоступен",
+  "error_service_action": "Попробуйте ещё раз через минуту.",
+  "error_page_not_found": "Такой страницы нет.",
+  "error_go_home": "На главную",
+  "error_reload": "Обновить страницу",
+  "photos_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} фотография",
+        "countPlural=few": "{count} фотографии",
+        "countPlural=many": "{count} фотографий",
+        "countPlural=*": "{count} фотографии"
+      }
+    }
+  ]
+}

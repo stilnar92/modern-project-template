@@ -69,7 +69,7 @@ Some parts solve a solved problem: the LLM, payments, notifications, S3. Their f
 | `<module>/<subpackage>` | Private code of the module, for example `store` | Only the same module imports it. Other modules import the module root |
 | `<module>/queries/*.sql` | The sqlc queries of the module | Use only the tables in the module README |
 
-Run all checks with `task lint`. CI runs the same command. The Go linters are in `core/.golangci.yml`. The frontend checks are oxlint (`web/.oxlintrc.json`, with the rule that `web/packages/**` must not import an app), oxfmt and tsgo.
+Run all checks with `mise run lint`. CI runs the same command. The Go linters are in `core/.golangci.yml`. The frontend checks are oxlint (`web/.oxlintrc.json`, with the rule that `web/packages/**` must not import an app), oxfmt and tsgo.
 
 **Coupling review** for a new module and for a large boundary change. The agent does it with this procedure:
 

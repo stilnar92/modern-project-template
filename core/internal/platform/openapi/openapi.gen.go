@@ -28,13 +28,13 @@ func (e ProblemType) Valid() bool {
 	}
 }
 
-// Defines values for GetHealth200JSONResponseBodyStatus.
+// Defines values for StatusStatus.
 const (
-	Ok GetHealth200JSONResponseBodyStatus = "ok"
+	Ok StatusStatus = "ok"
 )
 
-// Valid indicates whether the value is a known member of the GetHealth200JSONResponseBodyStatus enum.
-func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the StatusStatus enum.
+func (e StatusStatus) Valid() bool {
 	switch e {
 	case Ok:
 		return true
@@ -44,37 +44,60 @@ func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
 }
 
 // Problem An error in the Problem Details format (RFC 9457, backend standard 02). The frontend branches on "type", not on the text. The enum is the list of error types: a new type is a contract change. The response never contains internal details such as SQL or stack traces.
+//
+// Examples: {"detail":"The page does not exist.","status":404,"title":"Not Found","type":"about:blank"}
 type Problem struct {
 	// Detail A text for people about this call.
+	//
+	// Examples: The page does not exist.
 	Detail *string `json:"detail,omitempty"`
 
 	// Errors Field errors of a request that is not valid.
+	//
+	// Examples: [{"detail":"The price must be more than 0.","pointer":"/price"}]
 	Errors *[]struct {
 		Detail string `json:"detail"`
 
 		// Pointer A JSON Pointer to the field, for example "/email".
 		Pointer string `json:"pointer"`
 	} `json:"errors,omitempty"`
+
+	// Status Examples: 404
 	Status int `json:"status"`
 
 	// Title A short text for people. It does not change between calls.
+	//
+	// Examples: Not Found
 	Title string `json:"title"`
 
 	// Type A stable error ID. "about:blank": a plain HTTP error, and "title" is the name of the status.
+	//
+	//
+	// Examples: about:blank
 	Type ProblemType `json:"type"`
 }
 
 // ProblemType A stable error ID. "about:blank": a plain HTTP error, and "title" is the name of the status.
+//
+// Examples: about:blank
 type ProblemType string
 
-// GetHealth200JSONResponseBodyStatus defines parameters for GetHealth.
-type GetHealth200JSONResponseBodyStatus string
+// Status The answer of a system check.
+type Status struct {
+	Status StatusStatus `json:"status"`
+}
+
+// StatusStatus defines model for Status.Status.
+type StatusStatus string
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetHealth The process is alive
 	// (GET /healthz)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// GetReady The process can serve requests
+	// (GET /readyz)
+	GetReady(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -91,6 +114,20 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReady operation middleware
+func (siw *ServerInterfaceWrapper) GetReady(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReady(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -221,6 +258,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/healthz", wrapper.GetHealth)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/readyz", wrapper.GetReady)
 
 	return m
 }
@@ -234,9 +272,7 @@ type GetHealthResponseObject interface {
 	VisitGetHealthResponse(w http.ResponseWriter) error
 }
 
-type GetHealth200JSONResponse struct {
-	Status GetHealth200JSONResponseBodyStatus `json:"status"`
-}
+type GetHealth200JSONResponse Status
 
 func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseWriter) error {
 
@@ -267,11 +303,68 @@ func (response GetHealthdefaultApplicationProblemPlusJSONResponse) VisitGetHealt
 	return err
 }
 
+type GetReadyRequestObject struct {
+}
+
+type GetReadyResponseObject interface {
+	VisitGetReadyResponse(w http.ResponseWriter) error
+}
+
+type GetReady200JSONResponse Status
+
+func (response GetReady200JSONResponse) VisitGetReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReady503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetReady503ApplicationProblemPlusJSONResponse) VisitGetReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReadydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetReadydefaultApplicationProblemPlusJSONResponse) VisitGetReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealth The process is alive
 	// (GET /healthz)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// GetReady The process can serve requests
+	// (GET /readyz)
+	GetReady(ctx context.Context, request GetReadyRequestObject) (GetReadyResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -330,6 +423,30 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
 		if err := validResponse.VisitGetHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReady operation middleware
+func (sh *strictHandler) GetReady(w http.ResponseWriter, r *http.Request) {
+	var request GetReadyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReady(ctx, request.(GetReadyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReady")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReadyResponseObject); ok {
+		if err := validResponse.VisitGetReadyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

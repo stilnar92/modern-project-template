@@ -2,9 +2,13 @@
 
 A shell of the public pages: Astro with server rendering and the Node adapter. One server renders the public pages of all accounts ([architecture](../../../docs/dev/architecture.md)). There are no content pages yet: the page shows only that the core answers. The page sends no JavaScript to the browser.
 
+## Styles
+
+Tailwind 4 with the shared tokens (`@app/tokens`) and tailwind-variants (`src/styles/ui.ts`). `src/layouts/Base.astro` is the document of each page: it loads `src/styles/global.css` and declares `color-scheme`, so the page follows the system light or dark scheme.
+
 ## Run
 
-From `web/`: `pnpm dev` starts this app on http://localhost:4330 and the dashboard. Or only this app: `pnpm --filter @app/site dev`.
+From `web/`: `pnpm dev` starts this app on <http://localhost:4330> and the dashboard. Or only this app: `pnpm --filter @app/site dev`.
 
 The port is not the Astro default 4321, so it does not collide with other Astro apps on the same machine.
 

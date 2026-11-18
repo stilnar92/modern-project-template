@@ -8,30 +8,36 @@ The stack is like production: Postgres, S3 (SeaweedFS), Mailpit, the core image 
 
 | What | Command |
 | --- | --- |
-| Start, with migrations | `task up`. It creates `.env` when it does not exist and waits until each healthcheck passes |
-| Stop, keep the data | `task down` |
-| Stop and delete the data | `task reset` (it asks first) |
-| Logs | `task logs`, or `task logs -- api` for one service |
-| Migrations | `task migrate`, `task migrate -- status`, `task migrate -- down` |
-| Health | `docker compose -f deploy/compose.yaml --env-file .env ps`: each service except the worker shows `healthy` |
+| Start, with migrations | `mise run up`. It creates `.env` when it does not exist and waits until each healthcheck passes |
+| Stop, keep the data | `mise run down` |
+| Stop and delete the data | `mise run reset` (it asks first) |
+| Logs | `mise run logs`, or `mise run logs api` for one service |
+| Migrations | `mise run migrate`, `mise run migrate status`, `mise run migrate down` |
+| Health | `docker compose -f deploy/compose.yaml --env-file .env ps`: each service shows `healthy` |
 | Version of the running core | `docker compose -f deploy/compose.yaml --env-file .env exec api /app/api -version` |
 
-**Addresses:** http://api.localhost:8088 (core), http://mail.localhost:8088 (Mailpit), http://s3.localhost:8088 (S3). Postgres is on `localhost:54320`.
+**Addresses:** <http://api.localhost:8088> (core), <http://mail.localhost:8088> (Mailpit), <http://s3.localhost:8088> (S3). Postgres is on `localhost:54320`.
 
-**Healthchecks.** The api image has no shell, so the api binary checks itself: `/app/api -healthcheck` calls `/healthz`. The worker has no healthcheck until it has an HTTP endpoint.
+**Healthchecks.** The core image has no shell, so each binary checks itself. `/app/api -healthcheck` calls `/healthz` of the api. `/app/worker -healthcheck` calls `/healthz` on the metrics port of the worker. It answers 200 while the River client runs.
 
-**Version.** `task up` builds the core image with `VERSION` from `git describe --always --dirty`. The version is in `api -version`, in each log line (`"version"`) and in Sentry as the release.
+**Version.** `mise run up` builds the core image with `VERSION` from `git describe --always --dirty`. The version is in `api -version`, in each log line (`"version"`) and in Sentry as the release.
 
 ## A second worktree
 
-`task env` sets `COMPOSE_PROJECT_NAME` to the folder name, so a new worktree gets its own containers and volumes. Ports do not change on their own: in the new `.env`, set other values for `HTTP_PORT`, `POSTGRES_PORT`, `S3_PORT` and `SMTP_PORT`. If you forget, `task up` stops with "port is already allocated", and no data mixes. The web dev servers use fixed ports: 5173 (dashboard), 4330 (site), 4010 (Prism mock).
+`mise run env` (`deploy/worktree-env.sh`) gives each git worktree a slot number. The main checkout has slot 0. The slot list is in the shared git folder (`.git/app-worktree-slots`). A slot becomes free when its folder no longer exists. The new `.env` gets:
+
+- `COMPOSE_PROJECT_NAME` = the folder name, so the worktree has its own containers and volumes;
+- each port = the default plus the slot: `HTTP_PORT` (8088), `POSTGRES_PORT` (54320), `S3_PORT` (8333), `SMTP_PORT` (1025), `MOCK_PORT` (4010), `DASHBOARD_PORT` (5173), `SITE_PORT` (4330);
+- `CORE_URL` and the database URLs with these ports.
+
+So slot 2 has the core on <http://api.localhost:8090>. `mise run dev`, `mise run mock` and `mise run test:e2e` read the ports from `.env`. A worktree with an old `.env` keeps the old ports: delete its `.env` and run `mise run env` again.
 
 ## Backups and restore
 
 | What | Command |
 | --- | --- |
-| Dump the local database | `task db:dump`. The file goes into `backups/`, which git ignores |
-| Replace the local database with a dump | `task db:restore -- backups/<file>.dump`. It asks first and restores in one transaction, so a failed restore keeps the old data |
+| Dump the local database | `mise run db:dump`. The file goes into `backups/`, which git ignores |
+| Replace the local database with a dump | `mise run db:restore backups/<file>.dump`. It asks first and restores in one transaction, so a failed restore keeps the old data |
 
 To check a dump without changes to the main database, restore it into a scratch database:
 
@@ -45,7 +51,7 @@ dc exec -T postgres dropdb -U postgres restore_check
 
 The S3 volume (`s3data`) has no backup task yet. It holds only local test files.
 
-`TestDownAndUp` (`core/migrations/roundtrip_test.go`) runs each migration down and up again in `task test`, so a broken `Down` section fails before the merge.
+`TestDownAndUp` (`core/migrations/roundtrip_test.go`) runs each migration down and up again in `mise run test`, so a broken `Down` section fails before the merge.
 
 ## Errors and logs
 

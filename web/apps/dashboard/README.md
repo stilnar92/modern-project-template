@@ -4,15 +4,15 @@ A shell of the dashboard: Vite, React, Mantine ([ADR 0008](../../../docs/dev/adr
 
 ## Run
 
-From `web/`: `pnpm dev` starts this app on http://localhost:5173 and the site. Or only this app: `pnpm --filter @app/dashboard dev`.
+From `web/`: `pnpm dev` starts this app on <http://localhost:5173> and the site. Or only this app: `pnpm --filter @app/dashboard dev`.
 
 The browser calls the same origin. In development, Vite sends `/healthz` and `/v1` to the core:
 
-| Variable            | Default                     | What it does                                                                                               |
-| ------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `CORE_URL`          | `http://api.localhost:8088` | The core for the dev proxy. `task up` starts it. For the Prism mock (`task mock`): `http://127.0.0.1:4010` |
-| `VITE_API_BASE_URL` | empty (same origin)         | The core URL in the browser, for a build that is not served next to the core                               |
-| `VITE_SENTRY_DSN`   | empty                       | Error tracking and Web Vitals. Off when empty                                                              |
+| Variable            | Default                     | What it does                                                                                                       |
+| ------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `CORE_URL`          | `http://api.localhost:8088` | The core for the dev proxy. `mise run up` starts it. For the Prism mock (`mise run mock`): `http://127.0.0.1:4010` |
+| `VITE_API_BASE_URL` | empty (same origin)         | The core URL in the browser, for a build that is not served next to the core                                       |
+| `VITE_SENTRY_DSN`   | empty                       | Error tracking and Web Vitals. Off when empty                                                                      |
 
 ## Layout
 

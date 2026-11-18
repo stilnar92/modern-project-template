@@ -1,0 +1,8 @@
+# Project MCP servers for the Codex CLI: the same servers as .mcp.json
+# (AI standard 02). Not checked in a live Codex session yet.
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.84"]
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"

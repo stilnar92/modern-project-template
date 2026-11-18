@@ -29,6 +29,6 @@
 
 ## Checks
 
-- CI runs the dependency audit on each change: `task audit:go` (govulncheck on the core, only the vulnerabilities that our code calls) and `task audit:deps` (osv-scanner on the web lockfile). An accepted finding goes into `osv-scanner.toml` with a reason and an end date. Dependabot security updates open fix PRs.
+- CI runs the dependency audit on each change: `mise run audit:go` (govulncheck on the core, only the vulnerabilities that our code calls) and `mise run audit:deps` (osv-scanner on the web and docs viewer lockfiles). An accepted finding goes into `osv-scanner.toml` with a reason and an end date. Dependabot security updates open fix PRs.
 - Before the pilot and before we connect payments: an audit with the skill [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) in an isolated sandbox ([AI standard](../ai-standard/03-review-verification.md)).
 - For early-stage priorities, use [security-101-for-saas-startups](https://github.com/forter/security-101-for-saas-startups) as a guide. Check its last update date before you rely on specific advice.

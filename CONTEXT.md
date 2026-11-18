@@ -24,6 +24,8 @@ The model below is conceptual. It does not describe deployed tables. The templat
 
 An account is a tenant, not a login identity. Add the rules that separate similar terms here.
 
+The glossary is in [THESAURUS.md](docs/dev/THESAURUS.md). It gives each term, its code name and the names to avoid. Search it before you name a thing.
+
 ## Conceptual relationships
 
 Show only the relationships stated in the sources. All account-owned entities stay isolated, also when the diagram does not show the ownership edge.

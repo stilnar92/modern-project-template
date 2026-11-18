@@ -1,0 +1,6 @@
+/* Mermaid measures a label with its own line height (1.5). The VitePress
+   rule ".vp-doc p" sets a larger one, so the last line of a multi-line label
+   was cut off. Keep the line height that mermaid measured. */
+.vp-doc .mermaid foreignObject p {
+  line-height: inherit;
+}

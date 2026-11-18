@@ -1,0 +1,14 @@
+# Spelling check: mise run lint:docs (typos).
+# Add a word here only when it is a real name or term, with a reason.
+
+[files]
+# Generated or third-party files. testdata/fuzz: Go names fuzz cases with a hash.
+extend-exclude = ["**/testdata/fuzz/**", "*.sum", "go.mod", "pnpm-lock.yaml", "package-lock.json", "*.gen.go", "schema.d.ts", "*.gen.ts", "*/skills/ubiquitous-language/scripts/*"]
+
+[default]
+# The shell names bash and zsh in a regular expression of the agent hook.
+extend-ignore-re = ['\(ba\|z\)\?sh']
+
+[default.extend-words]
+# HAX: the Microsoft Human-AI eXperience toolkit, a source of the UX standard.
+HAX = "HAX"

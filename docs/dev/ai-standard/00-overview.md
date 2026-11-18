@@ -18,8 +18,9 @@
 | A10 | Each agent mistake becomes a guard: a hook, a line in `CLAUDE.md`, a skill fix | 02 |
 | A11 | Install an external skill or plugin only after you read its code and check its license and last update date: skills run code | 04 |
 | A12 | The agent makes cheap decisions and records them in plain words. Expensive decisions go to the human as a card: the point, the options, the consequences, a recommendation | 05 |
-| A13 | Learning comes through tasks: at the end of each backend task, the agent writes a debrief as a teacher. Concepts and patterns collect in the concept map. Difficulty increases as the owner learns | 05 |
+| A13 | Learning comes through tasks: a problem that had a real choice becomes a lesson in the same PR. A lesson has the problem, the theory with sources, the options, the edge cases and the decision | 05 |
 | A14 | All project text is in English and follows ASD-STE100: documents, issues, PRs, PR comments, commits, code comments, agent replies | 06 |
+| A15 | A subagent executes one assignment by a fixed contract and brief. The orchestrator checks it in the first minute and accepts its work only on evidence: the diff, the checks, the deviation journal | 07 |
 
 ## Sections
 
@@ -31,6 +32,7 @@
 | 04 | Tools | [04-tools.md](04-tools.md) | DRAFT |
 | 05 | Human in the loop: decisions and learning | [05-human-in-the-loop.md](05-human-in-the-loop.md) | DRAFT |
 | 06 | Language and writing style | [06-writing-style.md](06-writing-style.md) | DRAFT |
+| 07 | Delegation to subagents | [07-delegation.md](07-delegation.md) | DRAFT |
 
 ## Sources
 

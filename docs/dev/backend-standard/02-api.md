@@ -30,6 +30,12 @@ The format is Problem Details, [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457
 - Field validation errors go into the `errors` extension, with a JSON Pointer to the field.
 - Internal details (SQL, stack traces, IDs of other accounts) do not go into the response. They go into the log with the request ID, and the response contains the request ID.
 
+## Lists
+
+- A list endpoint takes `?cursor=` and `?limit=` (default 20, at most 100) and answers `{"items": [...], "next_cursor": "..."}`. `next_cursor` is empty on the last page.
+- The cursor is opaque: the client sends it back and never reads it. A cursor that the server did not make gets a 400 Problem.
+- `internal/platform/cursor` has the helper and the SQL pattern: order by `(created_at, id)`, newest first, no `OFFSET` ([03](03-data.md#queries)).
+
 ## Compatibility
 
 - Inside `/v1`: only new endpoints, new optional fields, and new values that the client can ignore.

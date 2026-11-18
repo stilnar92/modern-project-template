@@ -1,18 +1,20 @@
 // Command migrate applies the database migrations. It is a separate step
-// before the start of the api and the worker (issue #25).
+// before the start of the api and the worker.
 //
 // Usage: migrate [up|down|status|version] (default: up)
-// It connects as the schema owner: MIGRATE_DATABASE_URL.
+// It connects as the schema owner: MIGRATE_DATABASE_URL. "up" applies the
+// goose migrations, then the River tables (migrations.River). "down",
+// "status" and "version" work on the goose migrations only.
 package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
 	"github.com/stilnar92/modern-project-template/core/internal/platform/config"
@@ -20,33 +22,43 @@ import (
 	"github.com/stilnar92/modern-project-template/core/migrations"
 )
 
+// migrateConfig is the environment of migrate (.env.example).
+type migrateConfig struct {
+	config.Base
+	DatabaseURL string `env:"MIGRATE_DATABASE_URL,required,notEmpty"`
+}
+
 func main() {
-	logger, flush, err := observability.Setup("migrate")
+	cfg, err := config.Load[migrateConfig]()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer flush()
-	if err := run(context.Background()); err != nil {
-		observability.ReportError(logger, "migrate failed", err)
-		flush()
+	ctx := context.Background()
+	tel, err := observability.Setup(ctx, "migrate", cfg.Base)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if err := run(ctx, cfg.DatabaseURL); err != nil {
+		observability.ReportError(ctx, tel.Logger, "migrate failed", err)
+		tel.Shutdown(ctx)
+		os.Exit(1)
+	}
+	tel.Shutdown(ctx)
 }
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, dsn string) error {
 	command := "up"
 	if len(os.Args) > 1 {
 		command = os.Args[1]
 	}
-	dsn, err := config.Required("MIGRATE_DATABASE_URL")
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return err
-	}
+	defer pool.Close()
+	db := stdlib.OpenDBFromPool(pool)
 	defer func() { _ = db.Close() }()
 
 	provider, err := goose.NewProvider(goose.DialectPostgres, db, migrations.FS)
@@ -61,6 +73,13 @@ func run(ctx context.Context) error {
 		}
 		if err == nil && len(results) == 0 {
 			fmt.Println("no new migrations")
+		}
+		if err != nil {
+			return err
+		}
+		versions, err := migrations.River(ctx, pool)
+		if len(versions) > 0 {
+			fmt.Printf("applied river migrations %v\n", versions)
 		}
 		return err
 	case "down":

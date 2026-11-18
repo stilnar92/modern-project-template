@@ -1,5 +1,5 @@
 # Known vulnerabilities that we accept, each with a reason and an end date.
-# task audit:deps uses this file. After ignoreUntil, the check fails again,
+# mise run audit:deps uses this file. After ignoreUntil, the check fails again,
 # so somebody looks at the finding again.
 
 [[IgnoredVulns]]
@@ -11,3 +11,96 @@ in postman-collection. postman-collection does not call helpers.fake, the \
 vulnerable function. faker 8+ removes faker.address, which postman-collection \
 reads at load time, so an override breaks Prism. The Dependabot alert is \
 dismissed with the same reason."""
+
+# --- Docs viewer (tools/docs-viewer, ADR 0016) ---------------------------
+# VitePress 1.6.4 needs Vite 5. The fixes are in Vite 6 and later, and
+# VitePress 2 is still an alpha release. The owner accepted these findings
+# until the review date in tools/docs-viewer/README.md. The web workspace
+# uses Vite 8, so these entries hide nothing there.
+
+[[IgnoredVulns]]
+id = "GHSA-4w7w-66w2-5vf9"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-587h-7wmj-h5pm"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-698v-4r3x-3vcv"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-9jrq-w75r-8gcw"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-fx2h-pf6j-xcff"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-r825-w8mm-5pxw"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-rq7h-c2jc-7f22"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-v6wh-96g9-6wx3"
+ignoreUntil = 2027-02-14
+reason = """\
+vite 5.4.21 in the docs viewer only (VitePress 1.x). It affects the dev \
+server (mise run docs:dev), which listens on localhost and serves only the \
+viewer and the published roots. mise run docs serves the static build."""
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+ignoreUntil = 2027-02-14
+reason = """\
+esbuild 0.21.5 in the docs viewer only (through Vite 5). It affects the dev \
+server, which listens on localhost. The static build does not use it."""
+
+[[IgnoredVulns]]
+id = "GHSA-238p-pmpm-9mq7"
+ignoreUntil = 2027-02-14
+reason = """\
+katex 0.16.47 in the docs viewer only (through mermaid). It needs a hostile \
+math formula. The documents come from this repository only."""
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-02-18
+reason = """\
+picomatch <= 4.0.7 ReDoS, no fixed version yet. picomatch comes only \
+through build and test tools (vite, vitest, astro, knip, chokidar). They \
+match globs from our own config files, not user input, so the attack is \
+not reachable. Update picomatch when a fix is out."""

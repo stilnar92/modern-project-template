@@ -49,6 +49,7 @@ Source: [Title](url) (author).
 ```
 
 Collector rules:
+
 - Points are recorded **as collected** — condensed, but never extended with invented material.
 - Every borrowed idea cites its source inline (link + author).
 - A point that contradicts an existing point is **kept, with the tension flagged** (⚠️ marker and a one-line note); contradictions are resolved at elaboration, not at collection.
@@ -83,6 +84,7 @@ Status: proposed | accepted | superseded by NNNN
 ```
 
 ADR rules:
+
 - Any deviation from this standard MUST have an accepted ADR (P6). An unrecorded deviation is a bug.
 - ADRs are immutable once accepted — superseded, never edited.
 - Agents MAY draft ADRs; only humans accept them (section 04, not written yet).

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # One image for the core: the api, worker and migrate binaries.
 # Compose and production select the binary with "command".
-FROM golang:1.27.3-alpine AS build
+FROM golang:1.27.4-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 # Cache mounts keep the module and build caches between builds.
@@ -17,6 +17,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/ /app/
-USER nonroot:nonroot
+# 65532 is the nonroot user of the distroless image. A numeric ID works also
+# when the host cannot resolve the user name.
+USER 65532:65532
 EXPOSE 8080
 CMD ["/app/api"]

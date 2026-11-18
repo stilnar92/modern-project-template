@@ -11,11 +11,16 @@
   },
   "dependencies": {
     "@app/api-client": "workspace:*",
-    "@astrojs/node": "11.1.9",
-    "astro": "7.4.5"
+    "@app/i18n": "workspace:*",
+    "@app/tokens": "workspace:*",
+    "@astrojs/node": "11.1.13",
+    "astro": "7.4.8",
+    "tailwind-variants": "4.0.1"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",
+    "@tailwindcss/vite": "4.3.4",
+    "tailwindcss": "4.3.4",
     "typescript": "6.0.3",
     "vitest": "5.1.0"
   }

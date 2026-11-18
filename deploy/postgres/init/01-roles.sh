@@ -15,6 +15,11 @@ CREATE ROLE app_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD :'app_pw';
 -- System: only the marked places in ADR 0009. It ignores RLS.
 CREATE ROLE app_system LOGIN NOSUPERUSER BYPASSRLS PASSWORD :'system_pw';
 
+-- The owner may switch to the system role only with an explicit SET ROLE,
+-- so a migration can hand a SECURITY DEFINER function to it (ADR 0013).
+-- INHERIT FALSE: the owner does not get BYPASSRLS by default.
+GRANT app_system TO app_owner WITH INHERIT FALSE, SET TRUE;
+
 CREATE DATABASE app OWNER app_owner;
 SQL
 

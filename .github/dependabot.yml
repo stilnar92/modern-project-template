@@ -1,14 +1,40 @@
+# Each update waits 7 days after a release (cooldown). A compromised release
+# is usually found and pulled in that time.
 version: 2
 updates:
+  - package-ecosystem: docker
+    directory: /core
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    ignore:
+      # The Go version comes from mise.toml (lint:versions). Change it there by hand.
+      - dependency-name: golang
+  - package-ecosystem: docker-compose
+    directory: /deploy
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    ignore:
+      # A major Postgres upgrade needs a dump and a restore. Decide it by hand.
+      # A minor update must also change the test image in testdb.go (lint:versions).
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: gomod
     directory: /core
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
   - package-ecosystem: npm
     directory: /web
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     # Packages that must move together go into one PR.
     groups:
@@ -24,7 +50,24 @@ updates:
       # ADR 0008 fixes the Mantine major version. A new major needs a decision.
       - dependency-name: "@mantine/*"
         update-types: ["version-update:semver-major"]
+  # The docs viewer (ADR 0016). pnpm also waits 14 days (minimumReleaseAge).
+  - package-ecosystem: npm
+    directory: /tools/docs-viewer
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 3
+    groups:
+      vitepress:
+        patterns: ["vitepress", "vitepress-plugin-mermaid", "mermaid", "vue"]
+    ignore:
+      # vitepress-plugin-mermaid supports mermaid 10 and 11 only.
+      - dependency-name: mermaid
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7

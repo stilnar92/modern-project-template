@@ -12,7 +12,8 @@ export default defineConfig({
   // React Compiler is part of the build (frontend standard 09, 30).
   plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
   server: {
-    port: 5173,
+    // Each git worktree has its own port in .env (mise run dev).
+    port: Number(process.env.DASHBOARD_PORT ?? 5173),
     strictPort: true,
     proxy: { "/healthz": core, "/v1": core },
   },

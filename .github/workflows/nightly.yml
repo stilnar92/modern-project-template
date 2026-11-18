@@ -1,0 +1,54 @@
+# Nightly checks that are too slow or need the network, so PR CI does not run them.
+# The weekly audit is in audit.yml.
+name: Nightly
+
+on:
+  schedule:
+    # Each day 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The race detector finds data races that normal tests miss.
+  race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MISE_ENABLE_TOOLS: go
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          cache_key_prefix: mise-v1-race
+      - name: Core tests with the race detector
+        working-directory: core
+        run: go test -race ./...
+
+  # PR CI checks links offline. This job also checks the external links of the
+  # development and agent docs. 403 and 429 mean "a robot is blocked", not "the page is gone".
+  # Local URLs need a browser session.
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MISE_ENABLE_TOOLS: lychee
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          cache_key_prefix: mise-v1-links
+      - name: Links, also external
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: >-
+          git ls-files -z -- '*.md'
+          | xargs -0 lychee --offline=false --accept '200..=299,403,429'
+          --exclude '^https?://(localhost|127\.0\.0\.1|[a-z.]*\.localhost)'

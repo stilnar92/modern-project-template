@@ -1,0 +1,42 @@
+# sqlc compiles the SQL of each module into typed Go code (backend standard 03).
+# The schema comes from the goose migrations: sqlc reads only the Up parts.
+# Each module gets one entry: its queries/ folder and its private store package.
+# Run "mise run gen" after a change. Do not edit the generated files.
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/accounts/queries
+    gen:
+      go:
+        package: store
+        out: internal/accounts/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          # IDs are the uuid type of the standard library (ADR 0012).
+          - db_type: uuid
+            go_type: { import: uuid, type: UUID }
+          - db_type: uuid
+            nullable: true
+            go_type: { import: uuid, type: UUID, pointer: true }
+          - db_type: timestamptz
+            go_type: time.Time
+  - engine: postgresql
+    schema: migrations
+    queries: internal/events/queries
+    gen:
+      go:
+        package: store
+        out: internal/events/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          # IDs are the uuid type of the standard library (ADR 0012).
+          - db_type: uuid
+            go_type: { import: uuid, type: UUID }
+          - db_type: uuid
+            nullable: true
+            go_type: { import: uuid, type: UUID, pointer: true }
+          - db_type: timestamptz
+            go_type: time.Time

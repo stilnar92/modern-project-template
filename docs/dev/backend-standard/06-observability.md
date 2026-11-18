@@ -20,6 +20,13 @@ Connect observability when the repository is created, not later. The frontend pa
 - Errors go to Sentry (our own server or GlitchTip) with `request_id`.
 - Prometheus metrics: queue length and the age of the oldest job, jobs in the dead-letter queue, undelivered webhooks, adapter errors, the time and cost of AI tasks, the response time of the public API.
 
+## In the code
+
+- `internal/platform/observability`: the logger with `request_id` and `trace_id` from the context, the tracer, the meter and Sentry ([ADR 0012](../adr/0012-infrastructure-libraries.md)). Traces go out over OTLP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
+- `internal/platform/httpmw`: the request ID (`X-Request-ID`), the access log and panic recovery.
+- `internal/platform/jobs`: each log record of a River job has `job_id` and `job_kind`. The worker exports `river_queue_jobs{state}` and `river_queue_oldest_age_seconds{state}` for the alerts "jobs in the dead-letter queue" (`state="discarded"` above 0) and "the age of the oldest job increases" (`state="available"`). otelriver adds job counts and durations.
+- `/healthz` is liveness, `/readyz` checks the database. `/metrics` is on the internal `METRICS_PORT` of the api and the worker. The proxy does not route it.
+
 ## Alerts
 
 | Signal | Why it is important |

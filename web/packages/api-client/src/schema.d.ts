@@ -21,23 +21,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The process can serve requests
+         * @description 200 when the database answers. 503 when it does not, so a proxy or an orchestrator stops sending traffic to this process. The liveness check is /healthz.
+         */
+        get: operations["getReady"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description An error in the Problem Details format (RFC 9457, backend standard 02). The frontend branches on "type", not on the text. The enum is the list of error types: a new type is a contract change. The response never contains internal details such as SQL or stack traces. */
+        /** @description The answer of a system check. */
+        Status: {
+            /** @constant */
+            status: "ok";
+        };
+        /**
+         * @description An error in the Problem Details format (RFC 9457, backend standard 02). The frontend branches on "type", not on the text. The enum is the list of error types: a new type is a contract change. The response never contains internal details such as SQL or stack traces.
+         * @example {
+         *       "type": "about:blank",
+         *       "title": "Not Found",
+         *       "status": 404,
+         *       "detail": "The page does not exist."
+         *     }
+         */
         Problem: {
             /**
              * @description A stable error ID. "about:blank": a plain HTTP error, and "title" is the name of the status.
+             * @example about:blank
              * @enum {string}
              */
             type: "about:blank";
-            /** @description A short text for people. It does not change between calls. */
+            /**
+             * @description A short text for people. It does not change between calls.
+             * @example Not Found
+             */
             title: string;
+            /** @example 404 */
             status: number;
-            /** @description A text for people about this call. */
+            /**
+             * @description A text for people about this call.
+             * @example The page does not exist.
+             */
             detail?: string;
-            /** @description Field errors of a request that is not valid. */
+            /**
+             * @description Field errors of a request that is not valid.
+             * @example [
+             *       {
+             *         "pointer": "/price",
+             *         "detail": "The price must be more than 0."
+             *       }
+             *     ]
+             */
             errors?: {
                 /** @description A JSON Pointer to the field, for example "/email". */
                 pointer: string;
@@ -52,6 +101,13 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Not Found",
+                 *       "status": 404
+                 *     }
+                 */
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
@@ -78,12 +134,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @constant */
-                        status: "ok";
-                    };
+                    /**
+                     * @example {
+                     *       "status": "ok"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Status"];
                 };
             };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "ok"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+            503: components["responses"]["Problem"];
             default: components["responses"]["Problem"];
         };
     };

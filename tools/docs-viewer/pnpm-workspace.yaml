@@ -1,0 +1,23 @@
+# The docs viewer has its own lockfile, outside the web workspace (ADR 0016).
+packages: []
+
+# Each package in the tree must be at least 14 days old (in minutes).
+minimumReleaseAge: 20160
+
+# VitePress follows the symlinks in content/. A flat node_modules lets the
+# files behind the symlinks import the packages of the viewer.
+nodeLinker: hoisted
+
+# The build works without their install scripts: esbuild comes from its
+# platform package, and vue-demi only picks a Vue version.
+ignoredBuiltDependencies:
+  - esbuild
+  - vue-demi
+
+# Excalidraw (ADR 0017) pins old lodash-es and nanoid with known advisories.
+# Both keep their API in the fixed versions. nanoid 4 → 5 changes only the
+# Node support, and the editor runs in the browser.
+overrides:
+  lodash-es@<4.18.1: 4.18.1
+  nanoid@>=3 <4: 3.3.19
+  nanoid@>=4 <5.1.16: 5.1.16

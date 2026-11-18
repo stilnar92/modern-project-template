@@ -1,0 +1,14 @@
+/* The styles of the public pages (frontend standard 21, ADR 0001, ADR 0012).
+   Tailwind reads the theme from the shared tokens. Do not write design values
+   here: add a token in packages/tokens instead (D7). */
+@import "tailwindcss";
+@import "@app/tokens/tokens.css";
+@import "@app/tokens/tailwind.css";
+
+@layer base {
+  html {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
+}

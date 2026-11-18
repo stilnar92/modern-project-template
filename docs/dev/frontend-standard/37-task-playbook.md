@@ -7,7 +7,7 @@
 
 ## Collected points
 
-### When a task arrives (e.g. from Jira)
+### When a task arrives (from the GitHub board)
 
 1. **Understand before touching code:**
    - what is actually being asked, and *why* — the problem behind the ticket, not just its literal text;

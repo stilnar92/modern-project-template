@@ -1,0 +1,36 @@
+/* Generated from packages/tokens/src/tokens.ts by "pnpm gen". Do not edit. */
+@theme inline {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-brand-50: var(--ms-brand-0);
+  --color-brand-100: var(--ms-brand-1);
+  --color-brand-200: var(--ms-brand-2);
+  --color-brand-300: var(--ms-brand-3);
+  --color-brand-400: var(--ms-brand-4);
+  --color-brand-500: var(--ms-brand-5);
+  --color-brand-600: var(--ms-brand-6);
+  --color-brand-700: var(--ms-brand-7);
+  --color-brand-800: var(--ms-brand-8);
+  --color-brand-900: var(--ms-brand-9);
+  --color-gray-50: var(--ms-gray-0);
+  --color-gray-100: var(--ms-gray-1);
+  --color-gray-200: var(--ms-gray-2);
+  --color-gray-300: var(--ms-gray-3);
+  --color-gray-400: var(--ms-gray-4);
+  --color-gray-500: var(--ms-gray-5);
+  --color-gray-600: var(--ms-gray-6);
+  --color-gray-700: var(--ms-gray-7);
+  --color-gray-800: var(--ms-gray-8);
+  --color-gray-900: var(--ms-gray-9);
+  --color-surface: var(--ms-surface);
+  --color-text: var(--ms-text);
+  --color-text-muted: var(--ms-text-muted);
+  --color-border: var(--ms-border);
+  --color-accent: var(--ms-accent);
+  --color-on-accent: var(--ms-on-accent);
+  --font-sans: var(--ms-font-sans);
+  --radius-sm: var(--ms-radius-sm);
+  --radius-md: var(--ms-radius-md);
+  --radius-lg: var(--ms-radius-lg);
+}

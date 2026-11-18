@@ -45,4 +45,4 @@ CREATE POLICY account_isolation ON items
 - "Why is the result empty?" is harder to debug, so the query logs show which account is set.
 - Each new table with `account_id` gets its rule in the same migration. The review checks this with the checklist.
 - The system role is the most dangerous place. Its use is limited to the listed cases, and the code shows it through a separate function.
-- RLS is a topic in the optional learning map ([level 3](../../learning/backend-path.md#level-3--postgres-and-sql)).
+- Account isolation has a [lesson](../../learning/lessons/0006-tenant-isolation.md).

@@ -1,0 +1,5 @@
+# Upstream
+
+This skill is a copy of `skills/ubiquitous-language` from [CodeAlive-AI/ai-driven-development](https://github.com/CodeAlive-AI/ai-driven-development/tree/bcc63f2536dbacb13dbbb16185bee761510d7f01/skills/ubiquitous-language), commit `bcc63f2536dbacb13dbbb16185bee761510d7f01`. License: MIT ([LICENSE](LICENSE)).
+
+Local changes: `rumdl fmt` formatted the Markdown files for the project lint. A link to the `investigating-repository-history` skill became plain text, because that skill is not installed here. The section "Foundations" moved from `SKILL.md` to `README.md`. Three sections moved from `SKILL.md` to reference files: "If the Ambiguity Won't Resolve Itself" to `references/unresolved-ambiguity.md`, "Naming Rules by DDD Construct" to `references/naming-rules.md`, "Naming Anti-Patterns to Detect and Flag" to `references/naming-anti-patterns.md`. agnix allows 500 lines and 5000 tokens in `SKILL.md`. `allowed-tools` scopes Bash to `rg`, `grep`, `git` and `python3`. Make no other changes. To update, copy the new upstream version, run `mise exec -- rumdl fmt` on this folder, and change the commit above. The project thesaurus is `docs/dev/THESAURUS.md`.

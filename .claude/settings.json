@@ -14,6 +14,18 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
@@ -39,5 +51,23 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true,
+    "codex@openai-codex": true
   }
 }

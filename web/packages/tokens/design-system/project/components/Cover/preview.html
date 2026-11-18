@@ -1,0 +1,81 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: var(--surface);
+      }
+      .cover {
+        position: relative;
+        width: 960px;
+        height: 288px;
+        font-family: var(--font-sans);
+      }
+      svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .accent {
+        fill: var(--accent);
+      }
+      .deep {
+        fill: var(--brand-900);
+      }
+      .mid {
+        fill: var(--brand-500);
+      }
+      .tint {
+        fill: var(--brand-100);
+      }
+      .ink {
+        fill: var(--text);
+      }
+      .tile {
+        rx: var(--radius-md);
+      }
+      .name {
+        position: absolute;
+        left: 32px;
+        bottom: 56px;
+        margin: 0;
+        font-size: 64px;
+        line-height: 0.95;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .tagline {
+        position: absolute;
+        left: 32px;
+        bottom: 28px;
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cover">
+      <!--
+        blocks: accent 288x80, brand-900 160x80, brand-500 96x80, brand-100 112x80, ink 64x80 (radius-md)
+        arrangement: one full-width top band of unequal tiles, the name is too wide for the 440px zone
+        pattern: tiles cut by the radius tokens ("geometric, modular, dense UI": a dashboard and page kit)
+        steps: 16px gaps and 32px insets on the 4px grid, radius-md on every tile
+      -->
+      <svg width="960" height="128" viewBox="0 0 960 128" aria-hidden="true">
+        <rect class="accent tile" x="32" y="24" width="288" height="80" />
+        <rect class="deep tile" x="336" y="24" width="160" height="80" />
+        <rect class="mid tile" x="512" y="24" width="96" height="80" />
+        <rect class="tint tile" x="624" y="24" width="112" height="80" />
+        <rect class="ink tile" x="752" y="24" width="64" height="80" />
+        <rect class="accent tile" x="832" y="24" width="160" height="80" />
+      </svg>
+      <h1 class="name">modern-project-template</h1>
+      <p class="tagline">One line that says what the product does.</p>
+    </div>
+  </body>
+</html>

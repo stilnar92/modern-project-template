@@ -1,6 +1,6 @@
 ---
 name: to-tickets
-description: Slice an OpenSpec change of this project into tasks and prepare or publish linked GitHub board tickets.
+description: Slice an OpenSpec change of this project into tasks and prepare or publish linked GitHub board tickets. Use after the owner approves a proposal.
 ---
 
 # Turn a change into tasks

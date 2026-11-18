@@ -22,12 +22,12 @@ The commands that ran and their results. Write "not verified" for each thing tha
 
 ## Checks
 
-- [ ] `task lint`, `task test` and `task gen:check` pass
+- [ ] `mise run check` passes (lint, test, gen:check)
 - [ ] Each new check failed once on purpose
 - [ ] Migrations only add things (expand → migrate → contract), or there is no migration
 - [ ] Review in a fresh context. ChatGPT review: N comments, M fixed, K rejected with reasons
-- [ ] Documents updated where the change touches them: spec, `CONTEXT.md`, `docs/dev/data-map.md`, module READMEs
-- [ ] Learning debrief in `docs/learning/debriefs/` when the backend changed and the team keeps learning notes
+- [ ] Documents updated where the change touches them: spec, `data-map.md`, `events.md`, module READMEs
+- [ ] A lesson in `docs/learning/lessons/` for each problem that had a real choice, or none
 
 ## Merge danger
 

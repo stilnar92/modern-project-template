@@ -1,0 +1,64 @@
+/* The sketch editor (ADR 0017). Only loaded in dev. */
+.sketch-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.sketch-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.sketch-edit:hover {
+  opacity: 1;
+  border-color: var(--vp-c-brand-1);
+}
+
+.sketch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.sketch-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ddd;
+  color: #222;
+  font-size: 14px;
+}
+
+.sketch-bar span:first-child {
+  flex: 1;
+  font-family: var(--vp-font-family-mono);
+}
+
+.sketch-bar button {
+  padding: 4px 14px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #f6f6f6;
+  color: #222;
+}
+
+.sketch-status {
+  color: #666;
+}
+
+.sketch-canvas {
+  flex: 1;
+  min-height: 0;
+}

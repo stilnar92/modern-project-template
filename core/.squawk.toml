@@ -1,0 +1,4 @@
+# squawk: checks the migrations for unsafe statements (mise run lint:core).
+# goose runs each migration in one transaction (no migration uses
+# "+goose NO TRANSACTION"), so squawk can assume it.
+assume_in_transaction = true

@@ -82,7 +82,7 @@ Source: [A11Y is UI Architecture](https://dev.to/artalar/a11y-is-ui-architecture
 
 ### Icon system (SVG)
 
-Sources: [SVGO](https://github.com/svg/svgo); trigger article on vite-svg-loader ([link](https://medium.com/@muhammederdinc/managing-svg-icons-effectively-using-vite-svg-loader-in-vue-vite-projects-990d2dc7ee02) — Vue-specific and unfetchable at collection time (429); points below are from the tools' own docs, adapted to React).
+Sources: [SVGO](https://github.com/svg/svgo); trigger article on vite-svg-loader ([Managing SVG icons with vite-svg-loader](https://medium.com/@muhammederdinc/managing-svg-icons-effectively-using-vite-svg-loader-in-vue-vite-projects-990d2dc7ee02) — Vue-specific and unfetchable at collection time (429); points below are from the tools' own docs, adapted to React).
 
 - **All icons are SVG**, optimized with **SVGO** in the build pipeline (strips metadata/editor cruft, configurable plugins) — unoptimized exports never reach the repo or the bundle.
 - **Icons import as React components** (SVGR — e.g. `vite-plugin-svgr`, the React equivalent of the article's vite-svg-loader), with SVGO applied by the loader: inline SVG means no extra network requests, tree-shaking of unused icons, and full CSS control.

@@ -1,13 +1,403 @@
-# Tool versions for local work and CI. Install them with: mise install
-# Keep only [tools] here. Other sections need "mise trust" in each worktree.
-# task lint:versions checks that go.mod, core/Dockerfile and the pnpm
-# packageManager field use the same versions.
+# One toolchain for local work, agents and CI (ADR 0010).
+# mise installs the tools below and runs the tasks: mise run <task>.
+# List the tasks with: mise tasks
+#
+# Trust: a git worktree is trusted when the main checkout is trusted, and
+# mise run, mise install and mise exec trust the config they load. So a new
+# agent worktree needs no setup. CI trusts the checkout (jdx/mise-action).
+# Write tasks as plain shell scripts, so they stay easy to read and to move.
+# mise run lint:versions checks that go.mod, the Dockerfiles and the pnpm
+# packageManager field use the versions from [tools].
+min_version = "2026.10.25"
+
 [tools]
-go = "1.27.3"
+go = "1.27.4"
+sqlc = "1.31.1"
 node = "22.23.4"
 pnpm = "10.23.0"
-task = "3.54.0"
 golangci-lint = "2.15.0"
 gitleaks = "8.30.1"
 lychee = "0.24.2"
 osv-scanner = "2.7.0"
+jactionlint = "2.4.0"
+zizmor = "1.32.0"
+hadolint = "2.15.1"
+shellcheck = "0.11.0"
+vacuum = "0.36.2"
+"github:oasdiff/oasdiff" = "1.35.0"
+"github:sbdchd/squawk" = "2.71.0"
+"github:agent-sh/agnix" = "0.61.0"
+typos = "1.52.0"
+rumdl = "0.3.2"
+
+# --- Install -------------------------------------------------------------
+# One install task. Other tasks depend on it, so parallel tasks do not run
+# two installs at once. mise skips it when the lockfile did not change.
+
+[tasks."install:web"]
+description = "Install the web dependencies (pnpm, frozen lockfile)"
+dir = "web"
+run = "pnpm install --frozen-lockfile"
+sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml", "*/*/package.json"]
+outputs = ["node_modules/.modules.yaml"]
+
+[tasks."install:docs-viewer"]
+description = "Install the docs viewer dependencies (pnpm, frozen lockfile, ADR 0016)"
+dir = "tools/docs-viewer"
+run = "pnpm install --frozen-lockfile"
+sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml"]
+outputs = ["node_modules/.modules.yaml"]
+
+# --- Build ---------------------------------------------------------------
+
+[tasks.build]
+description = "Build the core and the frontends"
+depends = ["build:core", "build:web"]
+
+[tasks."build:core"]
+description = "Build the Go binaries"
+dir = "core"
+run = "go build ./..."
+
+[tasks."build:web"]
+description = "Build all web apps (CI runs it)"
+dir = "web"
+depends = ["install:web"]
+run = "pnpm build"
+
+# --- Test ----------------------------------------------------------------
+
+[tasks.test]
+description = "Run the core, frontend and agent hook tests"
+depends = ["test:core", "test:web", "test:hooks", "test:scripts"]
+
+[tasks."test:core"]
+description = "Core tests. Integration tests start Postgres in Docker (testcontainers)"
+dir = "core"
+run = ["go vet ./...", "go test ./..."]
+
+[tasks."test:web"]
+description = "Web unit tests (Vitest)"
+dir = "web"
+depends = ["install:web"]
+run = "pnpm test"
+
+[tasks."test:hooks"]
+description = "Regression tests of the agent hooks, and the Codex copies match the Claude files"
+depends = ["test:mirrors"]
+run = "node --test .claude/hooks/guard.test.mjs"
+
+[tasks."test:scripts"]
+description = "Tests of the repository scripts in .github/scripts"
+run = "node --test .github/scripts/*.test.mjs"
+
+[tasks."check:scenarios"]
+description = "Each spec scenario of a feat/ branch has a test or check in the PR description (CI runs it on each PR change)"
+run = "node .github/scripts/scenario-links.mjs"
+
+[tasks."test:mirrors"]
+description = "Fail when a Codex copy differs from its Claude source (hooks, skills, AGENTS.md)"
+quiet = true
+run = '''
+fail=0
+diff -r .claude/hooks .codex/hooks >/dev/null || { echo ".codex/hooks differs from .claude/hooks. Copy the files from .claude/hooks."; fail=1; }
+diff -r .claude/skills .agents/skills >/dev/null || { echo ".agents/skills differs from .claude/skills. Copy the files from .claude/skills."; fail=1; }
+for d in . core web; do
+  cmp -s "$d/CLAUDE.md" "$d/AGENTS.md" || { echo "$d/AGENTS.md differs from $d/CLAUDE.md. Copy CLAUDE.md to AGENTS.md."; fail=1; }
+done
+exit $fail
+'''
+
+[tasks."test:e2e"]
+description = "End-to-end tests against the started environment (mise run up first)"
+dir = "web"
+depends = ["install:web", "env"]
+run = '''
+set -a; . ../.env; set +a
+pnpm test:e2e
+'''
+
+[tasks.dev]
+description = "Start the web dev servers: the dashboard on DASHBOARD_PORT, the public pages on SITE_PORT (.env)"
+dir = "web"
+depends = ["install:web", "env"]
+run = '''
+set -a; . ../.env; set +a
+pnpm dev
+'''
+
+# --- Docs viewer (ADR 0016) ------------------------------------------------
+# A local site over docs/, openspec/, api/ and CONTEXT.md. The Markdown stays
+# the source. The site only shows it.
+
+[tasks.docs]
+description = "Build the docs site and serve it on http://127.0.0.1:4173, or on the next free port in another worktree"
+dir = "tools/docs-viewer"
+depends = ["install:docs-viewer"]
+run = ["pnpm build", "pnpm preview"]
+
+[tasks."docs:dev"]
+description = "Docs site with live reload. It serves only the viewer and the published roots"
+dir = "tools/docs-viewer"
+depends = ["install:docs-viewer"]
+run = "pnpm dev"
+
+[tasks."docs:check"]
+description = "Build the docs site and check each link, anchor, image and title in the HTML (CI runs it when docs change)"
+dir = "tools/docs-viewer"
+depends = ["install:docs-viewer"]
+run = "pnpm check"
+
+# --- Code generation -----------------------------------------------------
+
+[tasks.mock]
+description = "Mock API from api/openapi.yaml on http://127.0.0.1:<MOCK_PORT> (Prism, 4010 in the main checkout)"
+dir = "web"
+depends = ["install:web", "env"]
+run = '''
+set -a; . ../.env; set +a
+pnpm mock
+'''
+
+[tasks.gen]
+description = "Generate the Go server and the TypeScript client from api/openapi.yaml"
+depends = ["gen:core", "gen:web"]
+
+[tasks."gen:core"]
+description = "Generate the Go server from api/openapi.yaml and the module SQL code with sqlc (core/sqlc.yaml)"
+dir = "core"
+run = ["go generate ./...", "sqlc generate"]
+
+[tasks."gen:web"]
+description = "Generate the TypeScript client from api/openapi.yaml"
+dir = "web"
+depends = ["install:web"]
+run = "pnpm gen"
+
+[tasks."gen:check"]
+description = "Fail when the generated code differs from the committed code (CI)"
+# gen is a dependency, not a step, so mise runs install:web once for the whole run.
+depends = ["gen"]
+run = [
+  "git diff --exit-code -- core web",
+  'test -z "$(git status --porcelain --untracked-files=all -- core web)"',
+]
+
+# --- Lint ----------------------------------------------------------------
+
+[tasks.check]
+description = "Run every check: lint, tests and the generated code. A change is done only when it passes"
+depends = ["lint", "test", "gen:check"]
+
+[tasks.lint]
+description = "Run all linters and architecture checks (CI runs the same tasks)"
+depends = [
+  "lint:versions", "lint:secrets", "lint:docs", "lint:ci", "lint:agents",
+  "lint:docker", "lint:shell", "lint:api", "lint:core", "lint:web",
+]
+
+[tasks."lint:secrets"]
+description = "Find secrets in the git history (gitleaks)"
+run = "gitleaks git --redact --no-banner ."
+
+[tasks."lint:docs"]
+description = "Markdown style (rumdl), spelling (typos), links and headings (lychee, offline)"
+run = [
+  "rumdl check .",
+  "typos",
+  "git ls-files -z -- '*.md' | xargs -0 lychee",
+]
+
+[tasks."lint:ci"]
+description = "GitHub Actions workflows and dependabot.yml (jactionlint), and workflow security (zizmor, offline). Warnings fail too"
+run = [
+  "jactionlint --strict-exit --no-color",
+  "zizmor --offline --no-progress .github/",
+]
+
+[tasks."lint:agents"]
+description = "CLAUDE.md, AGENTS.md, skills and hook configs (agnix). Warnings fail too"
+run = "agnix --strict ."
+
+[tasks."lint:docker"]
+description = "Dockerfiles (hadolint)"
+run = "git ls-files -z -- '*Dockerfile' | xargs -0 hadolint"
+
+[tasks."lint:shell"]
+description = "Shell scripts (shellcheck)"
+run = "git ls-files -z -- '*.sh' | xargs -0 shellcheck"
+
+[tasks."lint:api"]
+description = "OpenAPI contract: style (vacuum) and no breaking change against main (oasdiff). Set OASDIFF_BASE to compare with another ref"
+run = '''
+vacuum lint --details --no-style --fail-severity warn api/openapi.yaml
+base=$(mktemp)
+trap 'rm -f "$base"' EXIT
+git show "${OASDIFF_BASE:-origin/main}:api/openapi.yaml" > "$base"
+oasdiff breaking "$base" api/openapi.yaml --fail-on WARN
+'''
+
+[tasks."lint:versions"]
+description = "Fail when go.mod, the Dockerfiles or packageManager differ from mise.toml, or the test Postgres differs from compose"
+quiet = true
+run = '''
+go=$(sed -nE 's/^go *= *"(.+)"/\1/p' mise.toml)
+pnpm=$(sed -nE 's/^pnpm *= *"(.+)"/\1/p' mise.toml)
+pg=$(sed -nE 's/^ *image: (postgres:[^ ]+)$/\1/p' deploy/compose.yaml)
+fail=0
+grep -q "\"$pg\"" core/internal/platform/testdb/testdb.go || { echo "core/internal/platform/testdb/testdb.go: use $pg (deploy/compose.yaml)"; fail=1; }
+grep -qx "go $go" core/go.mod || { echo "core/go.mod: use 'go $go' (mise.toml)"; fail=1; }
+grep -q "^FROM golang:$go-" core/Dockerfile || { echo "core/Dockerfile: use golang:$go-alpine (mise.toml)"; fail=1; }
+for f in web/package.json tools/docs-viewer/package.json; do
+  grep -q "\"packageManager\": \"pnpm@$pnpm\"" "$f" || { echo "$f: use pnpm@$pnpm (mise.toml)"; fail=1; }
+done
+exit $fail
+'''
+
+[tasks."lint:core"]
+description = "golangci-lint, import rules, table ownership, the coupling report and migration safety (squawk)"
+dir = "core"
+run = ["golangci-lint run ./...", "go run ./tools/archcheck", "squawk migrations/*.sql"]
+
+[tasks."lint:web"]
+description = "oxlint (with app boundaries), oxfmt, TypeScript 7 (tsc) and unused code (knip)"
+dir = "web"
+depends = ["install:web"]
+run = "pnpm lint"
+
+# --- Review --------------------------------------------------------------
+
+[tasks."review:codex"]
+description = "ChatGPT review of the branch against origin/main (Codex plugin). Posts the result on the PR of the branch, when there is one"
+# AI standard 03, step 4. It needs the codex@openai-codex plugin of Claude
+# Code and a Codex login, so CI does not run it. The agent handles each
+# finding by the rules in AI standard 03.
+usage = '''
+arg "[mode]" help="review, or adversarial-review for important tasks" default="review"
+arg "[focus]" help="what adversarial-review must challenge" default=""
+'''
+run = '''
+set -eu
+case "$usage_mode" in review|adversarial-review) ;; *) echo "Use review or adversarial-review."; exit 1 ;; esac
+c=$(ls "$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | tail -1)
+test -n "$c" || { echo "The Codex plugin is not installed. Install codex@openai-codex in Claude Code, then run /codex:setup."; exit 1; }
+git fetch -q origin main
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+set -- "$usage_mode" --wait --base origin/main --scope branch
+if [ -n "$usage_focus" ]; then set -- "$@" "$usage_focus"; fi
+# No pipe: sh has no pipefail, so a pipe would hide a failed review.
+node "$c" "$@" > "$out"
+cat "$out"
+if gh pr view --json number >/dev/null 2>&1; then
+  { printf '## ChatGPT %s (Codex)\n\n' "$usage_mode"; cat "$out"; } | gh pr comment --body-file -
+  echo "Posted on the PR. Handle each finding by AI standard 03."
+fi
+'''
+
+# --- Audit ---------------------------------------------------------------
+
+[tasks.audit]
+description = "Find known vulnerabilities in the dependencies. It needs the network, so lint does not run it"
+depends = ["audit:go", "audit:deps"]
+
+[tasks."audit:go"]
+description = "govulncheck on the core. It reports only the vulnerabilities that our code calls"
+dir = "core"
+run = "go tool govulncheck ./..."
+
+[tasks."audit:deps"]
+description = "osv-scanner on the web and docs viewer lockfiles. Accepted findings, with reasons, are in osv-scanner.toml"
+run = "osv-scanner scan source --config osv-scanner.toml -L web/pnpm-lock.yaml -L tools/docs-viewer/pnpm-lock.yaml"
+
+# --- Local environment ---------------------------------------------------
+# Compose reads the settings from .env. VERSION is the commit, with "-dirty"
+# for local changes. Each worktree gets its own compose project and ports
+# (deploy/worktree-env.sh), so parallel stacks do not conflict.
+
+[tasks.env]
+description = "Create .env from .env.example when .env does not exist. Each worktree gets its own ports"
+run = "sh deploy/worktree-env.sh"
+
+[tasks.up]
+description = "Start the local environment, apply migrations, then start the core (CORE_URL in .env)"
+depends = ["env"]
+run = [
+  "docker compose -f deploy/compose.yaml --env-file .env up -d --wait postgres s3 mailpit",
+  { task = "migrate" },
+  'VERSION=$(git describe --always --dirty 2>/dev/null || echo dev) docker compose -f deploy/compose.yaml --env-file .env up -d --build --wait api worker caddy',
+]
+
+[tasks.setup]
+description = "Bring the worktree to a checked green baseline: dependencies, .env, the local stack and a smoke test. Run it first in each new session"
+# AI standard 01, "Reproducible bootstrap". You can run it again at any time.
+# mise installs the tools from [tools] before the task runs.
+depends = ["install:web"]
+run = [
+  'docker info >/dev/null 2>&1 || { echo "baseline: red. Docker is not running. Start Docker, then run mise run setup again."; exit 1; }',
+  { task = "up" },
+  '''
+set -a; . ./.env; set +a
+url="$CORE_URL/healthz"
+if curl -fsS --max-time 5 --retry 10 --retry-connrefused --retry-delay 2 "$url" | grep -q '"ok"'; then
+  echo "baseline: green ($url)"
+else
+  echo "baseline: red. $url does not answer. Next step: mise run logs api"
+  exit 1
+fi
+''',
+]
+
+[tasks.down]
+description = "Stop the local environment (the data stays)"
+run = "docker compose -f deploy/compose.yaml --env-file .env down"
+
+[tasks.reset]
+description = "Stop the local environment and delete its data"
+confirm = "This deletes the local database and files. Continue?"
+run = "docker compose -f deploy/compose.yaml --env-file .env down -v"
+
+[tasks.logs]
+description = "Follow the logs of the local environment (mise run logs api)"
+run = "docker compose -f deploy/compose.yaml --env-file .env logs -f"
+
+[tasks.migrate]
+description = "Apply the database migrations as a separate step (mise run migrate status)"
+depends = ["env"]
+usage = 'arg "[command]" help="goose command" default="up"'
+run = 'VERSION=$(git describe --always --dirty 2>/dev/null || echo dev) docker compose -f deploy/compose.yaml --env-file .env run --rm --build migrate /app/migrate "$usage_command"'
+
+[tasks."db:dump"]
+description = "Dump the local database into backups/ (pg_dump, custom format). Git ignores backups/"
+run = '''
+mkdir -p backups
+docker compose -f deploy/compose.yaml --env-file .env exec -T postgres pg_dump -U postgres -d app --format=custom > "backups/app-$(date +%Y%m%d-%H%M%S).dump"
+ls -1t backups/*.dump | head -1
+'''
+
+[tasks."db:restore"]
+description = "Replace the local database with a dump (mise run db:restore backups/<file>.dump)"
+confirm = "This replaces the local database with the dump. Continue?"
+usage = 'arg "<file>" help="the dump file"'
+# One transaction: a failed restore leaves the old data. --clean drops each object before it creates it again.
+run = '''
+test -f "$usage_file"
+docker compose -f deploy/compose.yaml --env-file .env exec -T postgres pg_restore -U postgres -d app --clean --if-exists --single-transaction < "$usage_file"
+'''
+
+# --- Run on the host -----------------------------------------------------
+
+[tasks."run:api"]
+description = "Start the core API on http://localhost:8080 (settings from .env)"
+run = '''
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+cd core && go run ./cmd/api
+'''
+
+[tasks."run:worker"]
+description = "Start the core worker (settings from .env)"
+run = '''
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+export METRICS_PORT="${WORKER_METRICS_PORT:-9091}"
+cd core && go run ./cmd/worker
+'''

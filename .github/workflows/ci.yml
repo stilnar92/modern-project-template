@@ -1,6 +1,6 @@
 # CI: linters, architecture checks and tests. No deploy.
 # core/ and web/ run separately. A change in api/ runs both.
-# mise installs the tools from mise.toml, so CI uses the same versions as local work.
+# mise installs the tools from mise.toml and runs the tasks, so CI runs the same commands and versions as local work.
 # MISE_ENABLE_TOOLS limits each job to the tools it needs. Each job has its own
 # mise cache prefix, because the tool lists differ and a cache key cannot contain commas.
 name: CI
@@ -20,6 +20,7 @@ permissions:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Job permissions replace the workflow permissions, so repeat contents.
     permissions:
       contents: read
@@ -28,15 +29,21 @@ jobs:
       core: ${{ steps.filter.outputs.core }}
       web: ${{ steps.filter.outputs.web }}
       hooks: ${{ steps.filter.outputs.hooks }}
+      docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      # On push, paths-filter compares with the previous commit (event.before).
+      # The repository is private and the checkout keeps no credentials, so the filter cannot fetch that commit later.
+      # A full history on push makes the commit available locally. A pull request uses the API and needs no history.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
             shared: &shared
               - api/**
-              - Taskfile.yml
               - mise.toml
               - .github/workflows/ci.yml
             core:
@@ -46,7 +53,6 @@ jobs:
               - *shared
               - web/**
             hooks:
-              - Taskfile.yml
               - mise.toml
               - .github/workflows/ci.yml
               - .claude/**
@@ -54,34 +60,53 @@ jobs:
               - .agents/**
               - '**/CLAUDE.md'
               - '**/AGENTS.md'
+            docs:
+              - docs/**
+              - openspec/**
+              - api/**
+              - CONTEXT.md
+              - tools/docs-viewer/**
+              - mise.toml
+              - .github/workflows/ci.yml
 
   # Checks of the whole repository. They run on each change.
   repo:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
-      MISE_ENABLE_TOOLS: task,gitleaks,lychee,osv-scanner
+      MISE_ENABLE_TOOLS: gitleaks,lychee,osv-scanner,rumdl,typos,jactionlint,github:agent-sh/agnix,zizmor,hadolint,shellcheck,vacuum,github:oasdiff/oasdiff
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           # gitleaks scans the whole history, so it sees each commit of the PR.
           fetch-depth: 0
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache_key_prefix: mise-v1-repo
-      - run: task lint:versions
-      - run: task lint:secrets
-      - run: task lint:docs
-      - run: task audit:deps
+      - run: mise run lint:versions
+      - run: mise run lint:secrets
+      - run: mise run lint:docs
+      - run: mise run lint:ci
+      - run: mise run lint:agents
+      - run: mise run lint:docker
+      - run: mise run lint:shell
+      # oasdiff compares api/openapi.yaml with origin/main. fetch-depth 0 gives origin/main.
+      - run: mise run lint:api
+      - run: mise run audit:deps
 
   core:
     needs: changes
     if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      MISE_ENABLE_TOOLS: go,golangci-lint,task
+      MISE_ENABLE_TOOLS: go,sqlc,golangci-lint,github:sbdchd/squawk
     steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache_key_prefix: mise-v1-core
       - name: Go cache paths
@@ -89,7 +114,7 @@ jobs:
         run: |
           echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ steps.go.outputs.mod }}
@@ -98,59 +123,127 @@ jobs:
           key: go-${{ runner.os }}-${{ hashFiles('mise.toml', 'core/go.sum') }}
           restore-keys: go-${{ runner.os }}-
       - name: Generated code is up to date
-        run: task gen:core && git diff --exit-code -- core && test -z "$(git status --porcelain -- core)"
-      - run: task lint:core
-      - run: task test:core
-      - run: task audit:go
+        run: mise run gen:core && git diff --exit-code -- core && test -z "$(git status --porcelain -- core)"
+      - run: mise run lint:core
+      - run: mise run test:core
+      - run: mise run audit:go
+      # The same image as the local environment (deploy/compose.yaml). hadolint checks the file in the repo job.
+      - name: Build the core image
+        run: docker build --build-arg VERSION=ci core
 
   web:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
-      MISE_ENABLE_TOOLS: node,pnpm,task
+      MISE_ENABLE_TOOLS: node,pnpm
     steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache_key_prefix: mise-v1-web
       - name: pnpm store path
         id: pnpm
         working-directory: web
         run: echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.pnpm.outputs.store }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
       - name: Generated code is up to date
-        run: task gen:web && git diff --exit-code -- web && test -z "$(git status --porcelain -- web)"
-      - run: task lint:web
-      - run: task test:web
-      - run: task build:web
+        run: mise run gen:web && git diff --exit-code -- web && test -z "$(git status --porcelain -- web)"
+      - run: mise run lint:web
+      - run: mise run test:web
+      - run: mise run build:web
 
   # Agent hooks and the Codex copies of the Claude files. The commit rule
-  # tests need Go (gofmt, go vet) and gitleaks.
+  # tests need Go (gofmt, go vet) and gitleaks, the TypeScript case needs pnpm.
   hooks:
     needs: changes
     if: needs.changes.outputs.hooks == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
-      MISE_ENABLE_TOOLS: node,task,go,gitleaks
+      MISE_ENABLE_TOOLS: node,pnpm,go,gitleaks
     steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           cache_key_prefix: mise-v1-hooks
-      - run: task test:hooks
+      # The TypeScript case of the fast checks needs oxlint and oxfmt from web/node_modules.
+      - run: mise run install:web
+      - run: mise run test:hooks
+
+  # End-to-end tests on the real stack: the same compose file as local work.
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.core == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MISE_ENABLE_TOOLS: node,pnpm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          cache_key_prefix: mise-v1-e2e
+      # setup starts the stack and checks /healthz, so CI also checks the bootstrap (AI standard 01).
+      - run: mise run setup
+      - run: mise run install:web
+      - name: Install the Playwright browsers
+        working-directory: web
+        run: pnpm --filter @app/e2e exec playwright install --with-deps chromium webkit
+      - run: mise run test:e2e
+      - name: Logs of the local environment
+        if: failure()
+        run: docker compose -f deploy/compose.yaml --env-file .env logs --no-color
+
+  # The docs viewer (ADR 0016). It builds the site and checks each link,
+  # anchor and image in the HTML. It runs only when a document or the viewer changes.
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MISE_ENABLE_TOOLS: node,pnpm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          cache_key_prefix: mise-v1-docs
+      - name: pnpm store path
+        id: pnpm
+        working-directory: tools/docs-viewer
+        run: echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm.outputs.store }}
+          key: pnpm-docs-${{ runner.os }}-${{ hashFiles('tools/docs-viewer/pnpm-lock.yaml') }}
+          restore-keys: pnpm-docs-${{ runner.os }}-
+      - run: mise run docs:check
 
   # One stable check name for branch protection. It passes when the
   # needed jobs pass or are skipped by the path filter.
   ci-ok:
     if: always()
-    needs: [changes, repo, core, web, hooks]
+    needs: [changes, repo, core, web, e2e, hooks, docs]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - run: |
-          echo '${{ toJSON(needs) }}'
-          [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "false" ]]
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "$NEEDS"
+          [[ "$FAILED" == "false" ]]

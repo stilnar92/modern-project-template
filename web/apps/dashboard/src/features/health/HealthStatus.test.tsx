@@ -13,9 +13,9 @@ function renderStatus(state: "loading" | "ok" | "unavailable") {
 }
 
 test("shows that the core is available", () => {
-  expect(renderStatus("ok")).toHaveTextContent("Core: ok");
+  expect(renderStatus("ok")).toHaveTextContent("Ядро: ok");
 });
 
 test("shows that the core is unavailable", () => {
-  expect(renderStatus("unavailable")).toHaveTextContent("Core: unavailable");
+  expect(renderStatus("unavailable")).toHaveTextContent("Ядро: недоступно");
 });

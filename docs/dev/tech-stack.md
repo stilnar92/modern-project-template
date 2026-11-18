@@ -2,6 +2,28 @@
 
 The public site on Astro, the dashboard on Vite + React, the core in Go, Postgres for data and jobs. Tool versions are in `mise.toml`. The containers are in the [architecture](architecture.md).
 
+## In force now
+
+What the repository really uses. The rest of this page is the target stack, and parts of it come later. The versions are in `mise.toml` (tools), `core/go.mod` and the `package.json` files: this table does not copy them.
+
+| Area | In use | Decided in |
+| --- | --- | --- |
+| Tools and commands | mise (`mise.toml`): Go, Node, pnpm, sqlc, linters | [ADR 0010](adr/0010-mise-single-toolchain.md) |
+| Contract | `api/openapi.yaml` → oapi-codegen (Go), openapi-typescript and hey-api zod schemas (TypeScript) | [ADR 0005](adr/0005-api-surfaces-and-ownership.md), [ADR 0012](adr/0012-infrastructure-libraries.md) |
+| Core HTTP | `net/http`, our middleware (`platform/httpmw`), `http.CrossOriginProtection` | ADR 0012 |
+| Config | caarlos0/env through `platform/config` | ADR 0012 |
+| Data | Postgres 16, pgx, sqlc, goose, RLS through `db.WithAccount`, UUIDv7 from the standard library | [ADR 0009](adr/0009-account-isolation-rls.md), ADR 0012 |
+| Sessions | our code in `internal/accounts`, one `SECURITY DEFINER` lookup function | ADR 0012, [ADR 0013](adr/0013-session-lookup-function.md) |
+| Jobs and events | River (`rivermigrate` in `migrate`), the outbox in `internal/events` | [ADR 0014](adr/0014-river-and-outbox.md) |
+| Observability | slog JSON with request, job and trace IDs, OpenTelemetry traces and metrics (Prometheus exporter), Sentry | ADR 0012, [backend standard 06](backend-standard/06-observability.md) |
+| Dashboard | Vite, React, Mantine (`@mantine/form`, notifications), React Query, react-router in data mode | [ADR 0008](adr/0008-dashboard-mantine.md), ADR 0012 |
+| Public pages | Astro (server rendering, no browser JavaScript), Tailwind 4, tailwind-variants | [ADR 0001](adr/0001-dashboard-ui-library.md), ADR 0012 |
+| Shared web packages | `api-client`, `tokens` (design tokens), `i18n` (Paraglide) | ADR 0012 |
+| Web tooling | TypeScript 7, oxlint, oxfmt, knip, Vitest, Playwright | [frontend standard](frontend-standard/README.md) |
+| Local environment | Docker Compose: Postgres, SeaweedFS (S3), Mailpit, Caddy | [deploy/README.md](../../deploy/README.md) |
+
+Not chosen yet: hosting, the analytics tool, the error tracker server, the trace backend, the login method ([questions](questions.md)).
+
 ## Overview
 
 | Part | Technology | What it does |
@@ -14,6 +36,8 @@ The public site on Astro, the dashboard on Vite + React, the core in Go, Postgre
 One contract, `api/openapi.yaml`, generates the Go server code and the TypeScript client (`web/packages/api-client`) for the site and the dashboard.
 
 ## Frontend
+
+**Infrastructure libraries:** the libraries for middleware, sessions, CSRF, config, metrics, IDs, the outbox, pagination, validation, i18n, design tokens and error handling are in [ADR 0012](adr/0012-infrastructure-libraries.md).
 
 One TypeScript monorepo (pnpm workspace in `web/`): `apps/dashboard`, `apps/site`, `packages/*`, `e2e/`.
 
@@ -34,9 +58,11 @@ One TypeScript monorepo (pnpm workspace in `web/`): `apps/dashboard`, `apps/site
 | API client | openapi-typescript + openapi-fetch | Types come only from the contract | — |
 | Tests | Vitest, Testing Library, Playwright (`web/e2e`), Prism mock server from the contract | Unit, component and end-to-end tests. The frontend can work before the backend exists | — |
 
-The site has no Tailwind and no React islands yet. Add them with the first real page.
+The site has Tailwind and no React islands yet. Add an island with the first page that needs interaction.
 
 ## Backend and data
+
+**Infrastructure libraries:** the libraries for middleware, sessions, CSRF, config, metrics, IDs, the outbox, pagination, validation, i18n, design tokens and error handling are in [ADR 0012](adr/0012-infrastructure-libraries.md).
 
 | Module | Technologies | Why | Alternative |
 | --- | --- | --- | --- |
@@ -53,7 +79,7 @@ The site has no Tailwind and no React islands yet. Add them with the first real 
 | Observability | slog (JSON), OpenTelemetry, Prometheus, Sentry | Logs, traces, metrics, errors | — |
 | Tests | testcontainers-go | Tests with a real Postgres | — |
 
-What is in `core/go.mod` now: pgx, goose, sentry-go, testcontainers-go. Add sqlc, River and the other libraries with the first real use ([questions](questions.md#deferred-setup)).
+The libraries that the code uses now are in ["In force now"](#in-force-now) and in `core/go.mod`.
 
 ## Infrastructure and operations
 
@@ -89,7 +115,7 @@ What is in `core/go.mod` now: pgx, goose, sentry-go, testcontainers-go. Add sqlc
 ### Environments, CI and secrets
 
 - **Environments:** local (Docker Compose), staging and production.
-- **Monorepo** by [ADR 0007](adr/0007-monorepo-layout.md): `api/openapi.yaml`, `core/` (Go: `cmd/api`, `cmd/worker`, `cmd/migrate`, `internal/<module>`), `web/` (pnpm workspace: `apps/dashboard`, `apps/site`, `packages/*`), `deploy/`. Shared commands are in `Taskfile.yml`.
+- **Monorepo** by [ADR 0007](adr/0007-monorepo-layout.md): `api/openapi.yaml`, `core/` (Go: `cmd/api`, `cmd/worker`, `cmd/migrate`, `internal/<module>`), `web/` (pnpm workspace: `apps/dashboard`, `apps/site`, `packages/*`), `deploy/`. Shared commands are in `mise.toml` ([ADR 0010](adr/0010-mise-single-toolchain.md)). CI builds only the changed parts.
 - **Database migrations** are a separate deploy step, and only backward compatible.
 - **Platform secrets** are in the CI secret store or SOPS. **Account secrets** (third-party tokens and keys) are encrypted in the database. The encryption key is outside the database.
 - **Observability:** queue length, undelivered webhooks and certificate expiry, with alerts.
