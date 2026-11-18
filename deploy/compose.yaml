@@ -67,7 +67,7 @@ services:
 
   mailpit:
     # The image has its own healthcheck.
-    image: axllent/mailpit:v1.33.0
+    image: axllent/mailpit:v1.33.1
     restart: unless-stopped
     logging: *logging
     ports:
