@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/client_golang v1.25.0
 	github.com/riverqueue/river v0.51.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.51.0
-	github.com/riverqueue/river/rivertype v0.51.0
+	github.com/riverqueue/river/rivertype v0.51.2
 	github.com/riverqueue/rivercontrib/otelriver v0.12.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
