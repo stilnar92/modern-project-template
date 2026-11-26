@@ -13,8 +13,8 @@
     "@app/api-client": "workspace:*",
     "@app/i18n": "workspace:*",
     "@app/tokens": "workspace:*",
-    "@astrojs/node": "11.1.13",
-    "astro": "7.4.8",
+    "@astrojs/node": "11.1.14",
+    "astro": "7.4.13",
     "tailwind-variants": "4.0.1"
   },
   "devDependencies": {
