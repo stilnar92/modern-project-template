@@ -20,7 +20,7 @@
     "knip": "6.44.1",
     "modern-web-guidance": "1.0.0",
     "oxfmt": "0.77.0",
-    "oxlint": "1.90.0",
+    "oxlint": "1.94.0",
     "typescript": "7.0.2"
   },
   "browserslist": [
